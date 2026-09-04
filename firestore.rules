@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Historical dataset: public read-only access for dashboard charts & intelligence
+    // Direct client writes are disallowed to maintain empirical dataset integrity.
+    match /historicalData/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Default catch-all: deny all other unmatched document reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

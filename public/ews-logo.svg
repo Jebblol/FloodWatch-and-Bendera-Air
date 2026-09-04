@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Blue rounded square background -->
+  <rect width="512" height="512" rx="112" fill="#2563EB"/>
+
+  <!-- Wave + beacon EWS icon, centered and scaled up -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="28">
+    <!-- Top radar arc (signal wave) -->
+    <path d="M176 144 Q256 108 336 144" stroke-opacity="0.8"/>
+    <!-- Middle water surge wave -->
+    <path d="M80 288 C138 220 192 316 256 272 S374 228 432 288"/>
+    <!-- Lower hydrological wave -->
+    <path d="M80 368 C138 300 192 396 256 352 S374 308 432 368" stroke-opacity="0.65"/>
+  </g>
+
+  <!-- Precision beacon node -->
+  <circle cx="256" cy="184" r="22" fill="#FFFFFF"/>
+</svg>
