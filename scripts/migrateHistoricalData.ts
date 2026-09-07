@@ -1,15 +1,19 @@
-﻿import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 import xlsx from 'xlsx';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+// Load credentials safely from environment variables (process.env)
 const firebaseConfig = {
-  apiKey: 'AIzaSyA59FtyY0eF4vTmm2xdhBIcZRfrmtHQaq0',
-  authDomain: 'ews-dashboard-3d185.firebaseapp.com',
-  projectId: 'ews-dashboard-3d185',
-  storageBucket: 'ews-dashboard-3d185.firebasestorage.app',
-  messagingSenderId: '437173517420',
-  appId: '1:437173517420:web:ef089cb3ae798a9690ec49',
-  measurementId: 'G-5MCH5LCG41'
+  apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || '',
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || '',
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || process.env.FIREBASE_MEASUREMENT_ID || ''
 };
 
 const app = initializeApp(firebaseConfig);
@@ -107,72 +111,36 @@ async function runMigration() {
     } else {
       const existing = recordsMap.get(key)!;
       existing.populationDensity = density;
-      if (existing.floodEvents === null && row.Total_Flood_Events !== undefined && row.Total_Flood_Events !== null) {
-        existing.floodEvents = Number(row.Total_Flood_Events);
-      }
-      if (existing.totalAffected === null && row.Total_Affected !== undefined && row.Total_Affected !== null) {
-        existing.totalAffected = Number(row.Total_Affected);
-      }
-      if (existing.totalDeaths === null && row.Total_Deaths !== undefined && row.Total_Deaths !== null) {
-        existing.totalDeaths = Number(row.Total_Deaths);
-      }
     }
   });
 
-  const allRecords: CountryYearRecord[] = Array.from(recordsMap.values()).map(r => {
-    let avg = null;
-    if (r.floodEvents && r.floodEvents > 0 && r.totalAffected !== null && r.totalAffected !== undefined) {
-      avg = Number((r.totalAffected / r.floodEvents).toFixed(2));
+  // Calculate averageAffectedPerFlood
+  recordsMap.forEach((rec) => {
+    if (rec.floodEvents !== null && rec.floodEvents > 0 && rec.totalAffected !== null) {
+      rec.averageAffectedPerFlood = Number((rec.totalAffected / rec.floodEvents).toFixed(2));
     }
-    return {
-      ...r,
-      averageAffectedPerFlood: avg
-    };
   });
 
-  console.log('Prepared ' + allRecords.length + ' country-year records for Firestore migration.');
+  const allRecords = Array.from(recordsMap.values());
+  console.log(`Total country-year records compiled: ${allRecords.length}`);
 
-  const batchSize = 100;
-  let batch = writeBatch(db);
-  let count = 0;
-  let totalBatches = 0;
+  // Push to Firestore in batches of 400
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < allRecords.length; i += BATCH_SIZE) {
+    const chunk = allRecords.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
 
-  for (const record of allRecords) {
-    const docId = record.isoCode + '_' + record.year;
-    const docRef = doc(db, 'historicalData', docId);
-
-    batch.set(docRef, {
-      country: record.country,
-      isoCode: record.isoCode,
-      year: record.year,
-      floodEvents: record.floodEvents,
-      totalAffected: record.totalAffected,
-      totalDeaths: record.totalDeaths,
-      povertyRate: record.povertyRate,
-      populationDensity: record.populationDensity,
-      averageAffectedPerFlood: record.averageAffectedPerFlood
+    chunk.forEach((rec) => {
+      const docId = `${rec.isoCode}_${rec.year}`;
+      const docRef = doc(db, 'historicalData', docId);
+      batch.set(docRef, rec);
     });
 
-    count++;
-    if (count % batchSize === 0) {
-      await batch.commit();
-      totalBatches++;
-      console.log('Committed batch ' + totalBatches + ' (' + count + '/' + allRecords.length + ' records)');
-      batch = writeBatch(db);
-    }
-  }
-
-  if (count % batchSize !== 0) {
     await batch.commit();
-    totalBatches++;
-    console.log('Committed final batch ' + totalBatches + ' (' + count + '/' + allRecords.length + ' records)');
+    console.log(`Committed batch ${Math.floor(i / BATCH_SIZE) + 1} (${chunk.length} records)`);
   }
 
-  console.log('Migration to Firestore historicalData collection completed successfully!');
-  process.exit(0);
+  console.log('Migration completed successfully.');
 }
 
-runMigration().catch((err) => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+runMigration().catch(console.error);

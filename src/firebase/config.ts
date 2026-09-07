@@ -1,24 +1,29 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyA59FtyY0eF4vTmm2xdhBIcZRfrmtHQaq0",
-  authDomain: "ews-dashboard-3d185.firebaseapp.com",
-  projectId: "ews-dashboard-3d185",
-  storageBucket: "ews-dashboard-3d185.firebasestorage.app",
-  messagingSenderId: "437173517420",
-  appId: "1:437173517420:web:ef089cb3ae798a9690ec49",
-  measurementId: "G-5MCH5LCG41"
-};
-
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Firebase configuration loaded securely from Vite environment variables (import.meta.env)
+// Secrets and keys are NOT hard-coded in this source file.
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
+};
+
+// Initialize Firebase safely
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+// Initialize Analytics conditionally
+if (typeof window !== "undefined") {
+  isSupported().then((supported) => {
+    if (supported && firebaseConfig.measurementId) {
+      getAnalytics(app);
+    }
+  });
+}
+
 export const db = getFirestore(app);
