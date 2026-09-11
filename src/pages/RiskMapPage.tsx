@@ -10,7 +10,6 @@ import {
   Percent, 
   ChevronRight,
   Info,
-  X,
   Layers
 } from 'lucide-react';
 import { useEWS } from '../context/EWSContext';
@@ -24,13 +23,72 @@ const PROTOTYPE_MAP_COUNTRIES = ASEAN_COUNTRIES.filter(c =>
   PROTOTYPE_COUNTRY_IDS.includes(c.id)
 );
 
+// Map baseRiskScore to the standard 4 hazard tiers
+// CRITICAL (>=80), HIGH (65-79), MODERATE (50-64), LOW (<50)
+export const getHazardTier = (score: number | null): {
+  tier: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'NO_DATA';
+  label: string;
+  fillColor: string;
+  borderColor: string;
+  textColor: string;
+  badgeBg: string;
+} => {
+  if (score === null) {
+    return {
+      tier: 'NO_DATA',
+      label: 'Limited Data / Excluded',
+      fillColor: '#E2E8F0',
+      borderColor: '#94A3B8',
+      textColor: 'text-slate-500',
+      badgeBg: 'bg-slate-100 text-slate-600 border-slate-200'
+    };
+  }
+  if (score >= 80) {
+    return {
+      tier: 'CRITICAL',
+      label: 'Critical',
+      fillColor: '#F87171', // Red
+      borderColor: '#DC2626',
+      textColor: 'text-red-700',
+      badgeBg: 'bg-red-50 text-red-800 border-red-200'
+    };
+  }
+  if (score >= 65) {
+    return {
+      tier: 'HIGH',
+      label: 'High',
+      fillColor: '#FB923C', // Orange
+      borderColor: '#EA580C',
+      textColor: 'text-orange-700',
+      badgeBg: 'bg-orange-50 text-orange-800 border-orange-200'
+    };
+  }
+  if (score >= 50) {
+    return {
+      tier: 'MODERATE',
+      label: 'Moderate',
+      fillColor: '#FACC15', // Yellow
+      borderColor: '#CA8A04',
+      textColor: 'text-amber-800',
+      badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
+    };
+  }
+  return {
+    tier: 'LOW',
+    label: 'Low',
+    fillColor: '#4ADE80', // Light/Neutral Green
+    borderColor: '#16A34A',
+    textColor: 'text-emerald-700',
+    badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200'
+  };
+};
+
 // Helper component to handle view centering when selected country changes
 const MapViewController: React.FC<{ selectedCountry: CountryFloodData }> = ({ selectedCountry }) => {
   const map = useMap();
 
   React.useEffect(() => {
     if (selectedCountry && selectedCountry.lat && selectedCountry.lng) {
-      // Smoothly pan towards the selected country if it's one of the 8 monitored countries
       if (PROTOTYPE_COUNTRY_IDS.includes(selectedCountry.id)) {
         map.flyTo([selectedCountry.lat, selectedCountry.lng], Math.max(map.getZoom(), 4.5), {
           duration: 1.2
@@ -52,12 +110,9 @@ export const RiskMapPage: React.FC = () => {
 
   const [hoveredCountry, setHoveredCountry] = useState<CountryFloodData | null>(null);
 
-  // Choropleth color classification based on base flood risk score (0-100)
-  const getChoroplethColor = (countryId: string, isSelected: boolean) => {
-    if (isSelected) {
-      return '#2563EB'; // Vibrant Royal Blue when selected
-    }
-
+  // Choropleth color based on existing vulnerability/risk score
+  // Selected country PRESERVES its actual hazard color rather than turning solid blue
+  const getChoroplethColor = (countryId: string) => {
     if (!PROTOTYPE_COUNTRY_IDS.includes(countryId)) {
       return '#E2E8F0'; // Neutral Slate for Brunei, Singapore, Laos (No Data / Out of Scope)
     }
@@ -67,29 +122,29 @@ export const RiskMapPage: React.FC = () => {
       return '#E2E8F0';
     }
 
-    const score = countryData.baseRiskScore;
-    if (score >= 80) return '#F87171'; // High Risk (Soft Red)
-    if (score >= 65) return '#FB923C'; // Medium-High (Soft Orange)
-    if (score >= 50) return '#FACC15'; // Moderate (Soft Yellow)
-    return '#4ADE80'; // Baseline (<50) (Soft Green)
+    const hazard = getHazardTier(countryData.baseRiskScore);
+    return hazard.fillColor;
   };
 
-  // GeoJSON styling function for GIS basemap
+  // GeoJSON styling function for GIS choropleth
   const styleFeature = (feature: any) => {
     const countryId = feature.id || feature.properties?.iso_a3;
-    const isSelected = selectedCountry.id === countryId;
+    const isSelected = selectedCountry?.id === countryId;
     const isHovered = hoveredCountry?.id === countryId;
     const isMonitored = PROTOTYPE_COUNTRY_IDS.includes(countryId);
 
-    const fillColor = getChoroplethColor(countryId, isSelected);
+    const fillColor = getChoroplethColor(countryId);
 
     return {
       fillColor: fillColor,
-      weight: isSelected ? 2.5 : isHovered ? 2 : 1,
+      // Selected country receives a prominent, high-contrast outline to clearly indicate selection
+      weight: isSelected ? 3.5 : isHovered ? 2.5 : 1.2,
       opacity: 1,
-      color: isSelected ? '#1D4ED8' : isHovered ? '#3B82F6' : '#94A3B8',
+      // Selected country has bold dark blue outline, hovered has bright blue, default has subtle gray
+      color: isSelected ? '#1E3A8A' : isHovered ? '#2563EB' : '#64748B',
       dashArray: isMonitored ? '' : '3',
-      fillOpacity: isSelected ? 0.85 : isMonitored ? 0.72 : 0.35
+      // High opacity so hazard color is always clear and vivid
+      fillOpacity: isSelected ? 0.92 : isHovered ? 0.88 : isMonitored ? 0.78 : 0.35
     };
   };
 
@@ -107,9 +162,9 @@ export const RiskMapPage: React.FC = () => {
         }
         if (!selectedCountry || selectedCountry.id !== countryId) {
           target.setStyle({
-            weight: 2,
+            weight: 2.5,
             color: '#2563EB',
-            fillOpacity: isMonitored ? 0.85 : 0.5
+            fillOpacity: isMonitored ? 0.88 : 0.5
           });
         }
       },
@@ -127,15 +182,28 @@ export const RiskMapPage: React.FC = () => {
       }
     });
 
-    // Compact GIS tooltip on hover
+    // Clean, informative tooltip with actual existing vulnerability score & tier
     if (countryData) {
+      const hazard = getHazardTier(countryData.baseRiskScore);
       const tooltipContent = `
-        <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 2px 4px;">
-          <div style="font-weight: 700; color: #0F172A; margin-bottom: 2px;">${countryData.name}</div>
+        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px 4px;">
+          <div style="font-weight: 700; color: #0F172A; font-size: 13px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span>${countryData.name}</span>
+            <span style="font-size: 11px; font-weight: 600; color: #64748B;">(${countryData.id})</span>
+          </div>
           ${isMonitored 
-            ? `<div style="color: #475569;">Vulnerability Score: <strong>${countryData.baseRiskScore}/100</strong> (${countryData.vulnerabilityLevel})</div>
-               <div style="color: #64748B; font-size: 10px;">Click to view country intelligence</div>`
-            : `<div style="color: #94A3B8; font-style: italic;">Excluded from risk prototype (limited/unavailable data)</div>`
+            ? `<div style="color: #334155; margin-bottom: 2px;">
+                 Flood Vulnerability: <strong style="color: #0F172A;">${hazard.label}</strong>
+               </div>
+               <div style="color: #475569; font-size: 11px;">
+                 Risk Score: <strong style="color: #0F172A;">${countryData.baseRiskScore}/100</strong>
+               </div>
+               <div style="color: #2563EB; font-size: 10.5px; font-weight: 500; margin-top: 4px; border-top: 1px solid #E2E8F0; padding-top: 3px;">
+                 Click to view country profile &rarr;
+               </div>`
+            : `<div style="color: #94A3B8; font-style: italic; font-size: 11px;">
+                 Excluded from risk prototype (limited/unavailable data)
+               </div>`
           }
         </div>
       `;
@@ -148,6 +216,7 @@ export const RiskMapPage: React.FC = () => {
   };
 
   const activeDisplayCountry = hoveredCountry || selectedCountry;
+  const activeHazard = getHazardTier(activeDisplayCountry.baseRiskScore);
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
@@ -181,7 +250,7 @@ export const RiskMapPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <MapIcon className="w-4 h-4 text-blue-600" />
               <span className="text-xs font-bold text-slate-800">
-                Southeast Asia GIS Risk Choropleth
+                Southeast Asia Flood Vulnerability Choropleth
               </span>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/80">
@@ -226,7 +295,9 @@ export const RiskMapPage: React.FC = () => {
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
                   {PROTOTYPE_COUNTRY_IDS.includes(hoveredCountry.id) ? (
-                    <>Vulnerability: <span className="font-semibold text-slate-800">{hoveredCountry.baseRiskScore}/100</span> ({hoveredCountry.vulnerabilityLevel})</>
+                    <>
+                      Vulnerability: <span className="font-semibold text-slate-800">{getHazardTier(hoveredCountry.baseRiskScore).label}</span> (Score: <span className="font-semibold text-slate-800">{hoveredCountry.baseRiskScore}/100</span>)
+                    </>
                   ) : (
                     <span className="text-slate-400 italic">No risk score (limited data)</span>
                   )}
@@ -240,38 +311,52 @@ export const RiskMapPage: React.FC = () => {
             {/* Quick Country Selector Buttons (8 Analyzed Countries) */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="text-[11px] font-medium text-slate-500 mr-1">Focus Country:</span>
-              {PROTOTYPE_MAP_COUNTRIES.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCountryId(c.id)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors ${
-                    selectedCountry.id === c.id
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
+              {PROTOTYPE_MAP_COUNTRIES.map((c) => {
+                const isSelected = selectedCountry.id === c.id;
+                const cHazard = getHazardTier(c.baseRiskScore);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCountryId(c.id)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs ring-2 ring-blue-500/30'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span 
+                      className="w-2 h-2 rounded-full shrink-0" 
+                      style={{ backgroundColor: cHazard.fillColor }}
+                    />
+                    <span>{c.name}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* GIS Choropleth Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-600 border-t border-slate-100/80">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-sm bg-[#F87171] border border-red-300"></span> High Risk (≥80)
+            {/* GIS Choropleth Hazard-Ranking Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-[11px] text-slate-600 border-t border-slate-100/80">
+              <div className="flex flex-wrap items-center gap-3.5">
+                <span className="font-semibold text-slate-700">Flood Vulnerability:</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-[#4ADE80] border border-emerald-400 shadow-2xs"></span>
+                  <span>Low (&lt;50)</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-sm bg-[#FB923C] border border-orange-300"></span> Medium-High (65–79)
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-[#FACC15] border border-yellow-400 shadow-2xs"></span>
+                  <span>Moderate (50–64)</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-sm bg-[#FACC15] border border-yellow-300"></span> Moderate (50–64)
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-[#FB923C] border border-orange-400 shadow-2xs"></span>
+                  <span>High (65–79)</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-sm bg-[#4ADE80] border border-emerald-300"></span> Baseline (&lt;50)
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-[#F87171] border border-red-400 shadow-2xs"></span>
+                  <span>Critical (≥80)</span>
                 </span>
-                <span className="flex items-center gap-1 text-slate-400">
-                  <span className="w-3 h-3 rounded-sm bg-slate-200 border border-slate-300 border-dashed"></span> Limited Data / Excluded
+                <span className="flex items-center gap-1.5 text-slate-400">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-slate-200 border border-slate-300 border-dashed"></span>
+                  <span>Limited Data</span>
                 </span>
               </div>
 
@@ -291,14 +376,8 @@ export const RiskMapPage: React.FC = () => {
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                   Selected Country Profile
                 </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                  !selectedCountry.dataAvailable
-                    ? 'bg-slate-100 border-slate-200 text-slate-600'
-                    : selectedCountry.vulnerabilityLevel.includes('High')
-                    ? 'bg-red-50 border-red-200 text-red-700'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                }`}>
-                  {selectedCountry.vulnerabilityLevel}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${activeHazard.badgeBg}`}>
+                  {activeHazard.label} Vulnerability
                 </span>
               </div>
               <h3 className="text-lg font-bold text-slate-900 mt-0.5 flex items-center gap-1.5">
@@ -408,14 +487,8 @@ export const RiskMapPage: React.FC = () => {
                 <span className="text-[11px] font-medium text-slate-400">
                   Country Profile
                 </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                  !activeDisplayCountry.dataAvailable
-                    ? 'bg-slate-100 border-slate-200 text-slate-600'
-                    : activeDisplayCountry.vulnerabilityLevel.includes('High')
-                    ? 'bg-red-50 border-red-200 text-red-700'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                }`}>
-                  {activeDisplayCountry.vulnerabilityLevel}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${activeHazard.badgeBg}`}>
+                  {activeHazard.label} Vulnerability
                 </span>
               </div>
               <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
