@@ -4,6 +4,7 @@ import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNav } from './components/layout/MobileNav';
 import { PresentationBanner } from './components/demo/PresentationBanner';
+import { AIChatWidget } from './components/common/AIChatWidget';
 
 import { OverviewPage } from './pages/OverviewPage';
 import { HistoricalDataPage } from './pages/HistoricalDataPage';
@@ -59,6 +60,9 @@ const DashboardContent: React.FC = () => {
 
         {/* Mobile Navigation */}
         <MobileNav />
+
+        {/* Floating AI Chat Assistant Widget */}
+        <AIChatWidget />
 
         {/* Guided Presentation Walkthrough Banner */}
         <PresentationBanner />
