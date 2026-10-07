@@ -24,8 +24,8 @@ export const PresentationBanner: React.FC = () => {
   const currentStep = presentationSteps[presentationStep];
 
   return (
-    <div className="fixed bottom-16 md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-11/12 max-w-3xl animate-in slide-in-from-bottom-3 duration-200">
-      <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-xl">
+    <div className="fixed bottom-20 md:bottom-4 right-4 left-4 md:left-auto z-50 md:w-[34rem]">
+      <div className="bg-white border border-slate-400 border-t-4 border-t-[#0B3A6E] rounded-md p-3 sm:p-4">
         {/* Top Header */}
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2">

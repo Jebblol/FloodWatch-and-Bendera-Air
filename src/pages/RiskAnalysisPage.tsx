@@ -1,13 +1,17 @@
 import React from 'react';
 import { 
-  SlidersHorizontal, 
   Database, 
   Radio, 
   ShieldAlert, 
   Sparkles, 
-  Info,
+  Scale, 
+  Sliders, 
+  Activity, 
+  ArrowRight, 
+  Layers,
   ChevronRight,
-  Scale
+  TrendingUp,
+  Info
 } from 'lucide-react';
 import { useEWS } from '../context/EWSContext';
 
@@ -23,125 +27,156 @@ export const RiskAnalysisPage: React.FC = () => {
     setActiveTab
   } = useEWS();
 
+  const getThreatColor = (level: string) => {
+    switch (level) {
+      case 'CRITICAL': return 'var(--crit)';
+      case 'HIGH': return 'var(--high)';
+      case 'MODERATE': return 'var(--mod)';
+      case 'LOW': default: return 'var(--low)';
+    }
+  };
+
+  const threatColor = getThreatColor(threatAssessment.level);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="space-y-[20px] w-full max-w-[1200px]">
+      {/* Top Banner Header */}
+      <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-wrap items-center justify-between gap-[16px]">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-              Stage 4: Risk Synthesis
+          <div className="flex items-center gap-[8px]">
+            <span className="px-[8px] py-[3px] rounded-[4px] text-[11px] font-bold bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)]">
+              STAGE 4: RISK SYNTHESIS
             </span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-              Prototype Risk Model
+            <span className="text-[12px] text-[var(--muted)]">
+              Deterministic Multi-Hazard Decision Matrix
             </span>
           </div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 mt-1 tracking-tight">
+
+          <h2 className="text-[18px] font-bold text-[var(--ink)] m-0 mt-[4px]">
             Integrated Flood Risk Matrix & Analysis
           </h2>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-            Demonstrating how multi-decade historical vulnerability synthesizes with real-time hydraulic conditions to determine threat severity.
+          <p className="text-[13px] text-[var(--muted)] m-0 mt-[2px]">
+            Synthesizing 24-year historical vulnerability records (35%) with real-time hydraulic sensor telemetry (65%).
           </p>
         </div>
 
-        {/* Threat Level Quick Badge */}
-        <div className={`px-4 py-2 rounded-xl border flex items-center gap-2.5 shadow-sm ${threatAssessment.bgBadge}`}>
-          <span className={`w-2.5 h-2.5 rounded-full ${threatAssessment.pulseColor}`} />
+        {/* Threat Level Badge */}
+        <div 
+          className="px-[14px] py-[8px] rounded-[6px] border flex items-center gap-[10px]"
+          style={{ 
+            borderColor: threatColor,
+            background: 'var(--bg)'
+          }}
+        >
+          <span className="w-[10px] h-[10px] rounded-full animate-pulse" style={{ background: threatColor }} />
           <div>
-            <span className="text-[10px] font-medium text-slate-500 block">Computed Threat</span>
-            <span className={`text-sm font-bold ${threatAssessment.color}`}>
+            <span className="text-[11px] text-[var(--muted)] block font-medium">Computed Composite Risk</span>
+            <span className="text-[15px] font-bold" style={{ color: threatColor }}>
               {threatAssessment.level} ({threatAssessment.score}/100)
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main 3-Column Risk Fusion Matrix */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Column 1: Historical Vulnerability Sub-Model (4 Cols) */}
-        <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+      {/* Mathematical Model Formula Banner */}
+      <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+        <div className="flex items-center justify-between flex-wrap gap-[10px]">
+          <div className="flex items-center gap-[8px]">
+            <Scale className="w-5 h-5 text-[var(--sea)]" />
+            <h3 className="text-[14px] font-bold text-[var(--ink)] m-0">
+              Risk Decision Formula: R_composite = (0.35 × Baseline Vulnerability) + (0.65 × Live Hazard)
+            </h3>
+          </div>
+          <span className="text-[12px] text-[var(--muted)]">
+            Transparent deterministic weighting for disaster officials
+          </span>
+        </div>
+      </section>
+
+      {/* Main 3-Column Risk Fusion Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[20px]">
+        {/* COLUMN 1: Component A - Historical Vulnerability (35% weight) */}
+        <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[18px] flex flex-col justify-between space-y-[16px]">
+          <div>
+            <div className="flex items-center justify-between pb-[10px] border-b border-[var(--line)]">
+              <div className="flex items-center gap-[8px]">
+                <div className="w-[32px] h-[32px] rounded-[6px] bg-[color-mix(in_srgb,var(--sea)_12%,transparent)] flex items-center justify-center text-[var(--sea)]">
                   <Database className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-blue-700">
-                    Component A: Historical Risk
-                  </h3>
-                  <span className="text-[11px] text-slate-400">Weight: 35% in Composite Score</span>
+                  <h3 className="text-[14px] font-bold text-[var(--ink)] m-0">Component A: Historical</h3>
+                  <span className="text-[11px] text-[var(--muted)]">35% Composite Weight</span>
                 </div>
               </div>
-              <span className="text-sm font-bold text-blue-700">
-                {threatAssessment.historicalRiskComponent} / 100
-              </span>
+              <b className="text-[16px] text-[var(--sea)] font-bold">
+                {threatAssessment.historicalRiskComponent}/100
+              </b>
             </div>
 
-            <p className="text-xs text-slate-600">
-              Baseline vulnerability derived from historical dataset indicators (Weight: 35%):
+            <p className="text-[12px] text-[var(--muted)] my-[10px] leading-relaxed">
+              Baseline vulnerability indicators synthesized from ASEAN disaster data (2000–2023):
             </p>
 
-            <div className="space-y-2.5">
+            <div className="space-y-[10px]">
               {/* Metric 1: Flood Frequency */}
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600">1. Flood Frequency (35%)</span>
-                  <span className="font-semibold text-slate-900">
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <div className="flex justify-between text-[12px] mb-[4px]">
+                  <span className="text-[var(--muted)]">1. Flood Frequency (35%)</span>
+                  <b className="text-[var(--ink)]">
                     {selectedCountry.events !== null ? `${selectedCountry.events} events` : 'N/A'}
-                  </span>
+                  </b>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-[6px] bg-[var(--line)] rounded-[3px] overflow-hidden">
                   <div 
-                    className="h-full bg-blue-600 rounded-full" 
+                    className="h-full bg-[var(--sea)] rounded-[3px]"
                     style={{ width: `${Math.min(100, ((selectedCountry.events || 0) / 200) * 100)}%` }}
                   />
                 </div>
               </div>
 
               {/* Metric 2: Population Exposure */}
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600">2. Avg Affected Pop (35%)</span>
-                  <span className="font-semibold text-amber-700">
-                    {selectedCountry.avgAffected ? `${Math.round(selectedCountry.avgAffected).toLocaleString()}` : 'N/A'}
-                  </span>
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <div className="flex justify-between text-[12px] mb-[4px]">
+                  <span className="text-[var(--muted)]">2. Avg Affected Pop (35%)</span>
+                  <b className="text-amber-700">
+                    {selectedCountry.avgAffected ? `${Math.round(selectedCountry.avgAffected).toLocaleString()} /event` : 'N/A'}
+                  </b>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-[6px] bg-[var(--line)] rounded-[3px] overflow-hidden">
                   <div 
-                    className="h-full bg-amber-500 rounded-full" 
+                    className="h-full bg-[var(--mod)] rounded-[3px]"
                     style={{ width: `${Math.min(100, ((selectedCountry.avgAffected || 0) / 700000) * 100)}%` }}
                   />
                 </div>
               </div>
 
               {/* Metric 3: Poverty Rate */}
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600">3. Poverty Headcount (15%)</span>
-                  <span className="font-semibold text-emerald-700">
-                    {selectedCountry.povertyRate !== null ? `${selectedCountry.povertyRate}%` : 'N/A (30% baseline)'}
-                  </span>
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <div className="flex justify-between text-[12px] mb-[4px]">
+                  <span className="text-[var(--muted)]">3. Poverty Headcount (15%)</span>
+                  <b className="text-emerald-700">
+                    {selectedCountry.povertyRate !== null ? `${selectedCountry.povertyRate}%` : 'N/A'}
+                  </b>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-[6px] bg-[var(--line)] rounded-[3px] overflow-hidden">
                   <div 
-                    className="h-full bg-emerald-500 rounded-full" 
+                    className="h-full bg-[var(--low)] rounded-[3px]"
                     style={{ width: `${Math.min(100, ((selectedCountry.povertyRate || 15) / 50) * 100)}%` }}
                   />
                 </div>
               </div>
 
               {/* Metric 4: Population Density */}
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600">4. Population Density (15%)</span>
-                  <span className="font-semibold text-purple-700">
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <div className="flex justify-between text-[12px] mb-[4px]">
+                  <span className="text-[var(--muted)]">4. Population Density (15%)</span>
+                  <b className="text-[var(--ink)]">
                     {selectedCountry.density !== null ? `${selectedCountry.density} /km²` : 'N/A'}
-                  </span>
+                  </b>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-[6px] bg-[var(--line)] rounded-[3px] overflow-hidden">
                   <div 
-                    className="h-full bg-purple-500 rounded-full" 
+                    className="h-full bg-indigo-600 rounded-[3px]"
                     style={{ width: `${Math.min(100, ((selectedCountry.density || 50) / 400) * 100)}%` }}
                   />
                 </div>
@@ -149,175 +184,179 @@ export const RiskAnalysisPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400">
-            *Deterministic formula combining frequency, exposure, poverty, and density.
+          <div className="pt-[10px] border-t border-[var(--line)] text-[11px] text-[var(--muted)]">
+            Country: <strong>{selectedCountry.name}</strong> · Vulnerability Level: <strong>{selectedCountry.vulnerabilityLevel}</strong>
           </div>
-        </div>
+        </section>
 
-        {/* Column 2: Real-Time Telemetry & Sliders (4 Cols) */}
-        <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+        {/* COLUMN 2: Component B - Real-Time Telemetry (65% weight) */}
+        <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[18px] flex flex-col justify-between space-y-[16px]">
+          <div>
+            <div className="flex items-center justify-between pb-[10px] border-b border-[var(--line)]">
+              <div className="flex items-center gap-[8px]">
+                <div className="w-[32px] h-[32px] rounded-[6px] bg-[color-mix(in_srgb,var(--sea)_12%,transparent)] flex items-center justify-center text-[var(--sea)]">
                   <Radio className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-blue-700">
-                    Component B: Real-Time Telemetry
-                  </h3>
-                  <span className="text-[11px] text-slate-400">Weight: 65% in Composite Score</span>
+                  <h3 className="text-[14px] font-bold text-[var(--ink)] m-0">Component B: Real-Time</h3>
+                  <span className="text-[11px] text-[var(--muted)]">65% Composite Weight</span>
                 </div>
               </div>
-              <span className="text-sm font-bold text-blue-700">
-                {threatAssessment.realTimeRiskComponent} / 100
-              </span>
+              <b className="text-[16px] text-[var(--sea)] font-bold">
+                {threatAssessment.realTimeRiskComponent}/100
+              </b>
             </div>
 
-            <p className="text-xs text-slate-600">
-              Adjust live environmental inputs to test the dynamic threat response:
+            <p className="text-[12px] text-[var(--muted)] my-[10px] leading-relaxed">
+              Hydraulic inputs streaming from basin Doppler radar and river stage sensors:
             </p>
 
-            <div className="space-y-4">
-              {/* Rainfall Slider */}
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-700 font-semibold">Precipitation Rate:</span>
-                  <span className="font-bold text-blue-600">
-                    {simulatedRainfall} mm/h
-                  </span>
+            <div className="space-y-[14px]">
+              {/* Rainfall Slider & Reading */}
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[12px] space-y-[6px]">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--muted)]">Precipitation Inflow (45% of B):</span>
+                  <b className="text-[var(--ink)]">{simulatedRainfall} mm/h</b>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="200"
                   value={simulatedRainfall}
-                  onChange={(e) => setSimulatedRainfall(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  onChange={(e) => setSimulatedRainfall(parseInt(e.target.value))}
+                  className="w-full accent-[var(--sea)] cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>0 mm/h</span>
+                <div className="flex justify-between text-[10px] text-[var(--muted)]">
+                  <span>0 mm/h (Dry)</span>
                   <span>50 mm/h</span>
                   <span>100 mm/h</span>
-                  <span>200 mm/h</span>
+                  <span className="font-bold text-[var(--crit)]">200 mm/h</span>
                 </div>
               </div>
 
-              {/* Water Level Slider */}
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-700 font-semibold">Water Level Stage:</span>
-                  <span className="font-bold text-blue-600">
-                    {simulatedWaterLevel.toFixed(1)} m
-                  </span>
+              {/* Water Level Slider & Reading */}
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[12px] space-y-[6px]">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[var(--muted)]">River Water Stage (55% of B):</span>
+                  <b className="text-[var(--ink)]">{simulatedWaterLevel.toFixed(1)} m</b>
                 </div>
                 <input
                   type="range"
-                  min={selectedStation ? selectedStation.normalLevel * 0.5 : 0}
-                  max={selectedStation ? selectedStation.dangerLevel * 1.4 : 10}
+                  min={selectedStation ? (selectedStation.normalLevel * 0.5).toFixed(1) : "0.5"}
+                  max={selectedStation ? (selectedStation.dangerLevel * 1.4).toFixed(1) : "10"}
                   step="0.1"
                   value={simulatedWaterLevel}
-                  onChange={(e) => setSimulatedWaterLevel(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  onChange={(e) => setSimulatedWaterLevel(parseFloat(e.target.value))}
+                  className="w-full accent-[var(--sea)] cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
+                <div className="flex justify-between text-[10px] text-[var(--muted)]">
                   <span>Normal: {selectedStation?.normalLevel}m</span>
-                  <span className="text-red-600 font-semibold">Danger: {selectedStation?.dangerLevel}m</span>
+                  <span className="text-amber-600">Alert: {selectedStation?.alertLevel}m</span>
+                  <span className="text-red-600 font-bold">Danger: {selectedStation?.dangerLevel}m</span>
+                </div>
+              </div>
+
+              {/* Live Status Summary */}
+              <div className="p-[10px] rounded-[6px] bg-[var(--bg)] border border-[var(--line)] text-[12px] space-y-[4px]">
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Rainfall Hazard Contribution:</span>
+                  <b>{threatAssessment.rainfallContribution.toFixed(0)} / 100</b>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Water Level Crest Contribution:</span>
+                  <b>{threatAssessment.waterLevelContribution.toFixed(0)} / 100</b>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-blue-600 flex items-center gap-1">
+          <div className="pt-[10px] border-t border-[var(--line)] text-[11px] text-[var(--sea)] flex items-center gap-[4px]">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Interactive real-time slider controls</span>
+            <span>Interactive sensitivity adjustment</span>
           </div>
-        </div>
+        </section>
 
-        {/* Column 3: Composite Flood Risk Output (4 Cols) */}
-        <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${threatAssessment.bgBadge}`}>
-                  <ShieldAlert className={`w-4 h-4 ${threatAssessment.color}`} />
+        {/* COLUMN 3: Composite Flood Risk Output & Decision */}
+        <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[18px] flex flex-col justify-between space-y-[16px]">
+          <div>
+            <div className="flex items-center justify-between pb-[10px] border-b border-[var(--line)]">
+              <div className="flex items-center gap-[8px]">
+                <div 
+                  className="w-[32px] h-[32px] rounded-[6px] flex items-center justify-center text-white"
+                  style={{ background: threatColor }}
+                >
+                  <ShieldAlert className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800">
-                    Result: Composite Flood Risk
-                  </h3>
-                  <span className="text-[11px] text-slate-400">Dynamic Threat Decision</span>
+                  <h3 className="text-[14px] font-bold text-[var(--ink)] m-0">Output: Composite Risk</h3>
+                  <span className="text-[11px] text-[var(--muted)]">Dynamic Decision Result</span>
                 </div>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase border ${threatAssessment.bgBadge}`}>
+
+              <span 
+                className="px-[8px] py-[3px] rounded-[4px] text-[12px] font-bold text-white"
+                style={{ background: threatColor }}
+              >
+                {threatAssessment.score}/100
+              </span>
+            </div>
+
+            {/* Score Radial / Progress Meter */}
+            <div className="my-[14px] bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[14px] text-center space-y-[8px]">
+              <span className="text-[12px] text-[var(--muted)] block">Calculated Threat Category</span>
+              <b className="text-[24px] font-bold block" style={{ color: threatColor }}>
                 {threatAssessment.level}
-              </span>
-            </div>
-
-            {/* Score Radial/Progress Representation */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-2">
-              <span className="text-[10px] font-medium text-slate-500 tracking-wider">
-                Composite Risk Score
-              </span>
-              <div className="flex items-center justify-center gap-1.5">
-                <span className={`text-4xl font-extrabold tracking-tight ${threatAssessment.color}`}>
-                  {threatAssessment.score}
-                </span>
-                <span className="text-sm font-semibold text-slate-400">/ 100</span>
-              </div>
-
-              {/* Progress Tier Bar */}
-              <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex">
-                <div className="h-full bg-emerald-500" style={{ width: '35%' }} title="Low Risk (0-35)" />
-                <div className="h-full bg-amber-400" style={{ width: '25%' }} title="Moderate Risk (35-60)" />
-                <div className="h-full bg-orange-500" style={{ width: '20%' }} title="High Risk (60-80)" />
-                <div className="h-full bg-red-500" style={{ width: '20%' }} title="Critical Risk (80-100)" />
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-400 pt-0.5">
-                <span>0 Low</span>
-                <span>35 Mod</span>
-                <span>60 High</span>
-                <span>80+ Crit</span>
-              </div>
-            </div>
-
-            {/* Risk Assessment Summary */}
-            <div className="space-y-1 text-xs">
-              <h4 className="font-bold text-slate-900">{threatAssessment.statusTitle}</h4>
-              <p className="text-slate-600 text-[11px] leading-relaxed">
+              </b>
+              <p className="text-[12px] text-[var(--muted)] m-0">
                 {threatAssessment.actionSummary}
               </p>
+
+              {/* Progress bar */}
+              <div className="h-[8px] bg-[var(--line)] rounded-[4px] overflow-hidden mt-[10px]">
+                <div 
+                  className="h-full rounded-[4px] transition-all duration-300"
+                  style={{
+                    width: `${threatAssessment.score}%`,
+                    background: threatColor
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Recommended SOP Actions List */}
+            <div>
+              <span className="text-[12px] font-bold text-[var(--ink)] block mb-[6px]">
+                Triggered Emergency Directives:
+              </span>
+              <div className="space-y-[6px]">
+                {threatAssessment.recommendedActions.map((action, i) => (
+                  <div 
+                    key={i}
+                    className="p-[8px_12px] rounded-[6px] bg-[var(--bg)] border border-[var(--line)] text-[12px] flex items-center justify-between"
+                  >
+                    <span className="font-semibold text-[var(--ink)] flex items-center gap-[6px]">
+                      <span className="w-[6px] h-[6px] rounded-full" style={{ background: threatColor }} />
+                      Protocol {i + 1}: {action}
+                    </span>
+                    <span className="text-[10px] font-bold px-[6px] py-[2px] rounded text-white" style={{ background: threatColor }}>
+                      ACTIVE
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Action Link to Alerts View */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          {/* Action transition button */}
+          <div className="pt-[10px] border-t border-[var(--line)]">
             <button
               onClick={() => setActiveTab('alerts')}
-              className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+              className="w-full py-[8px] px-[12px] bg-[var(--sea)] text-white rounded-[6px] text-[12px] font-bold flex items-center justify-center gap-[6px] hover:opacity-95 cursor-pointer shadow-xs"
             >
-              <span>View Adaptive Alerts</span>
-              <ChevronRight className="w-4 h-4" />
+              <span>Transmit Alert & View Directives &rarr;</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Model Transparency & Formula Breakdown */}
-      <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-2 shadow-sm">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-          <Scale className="w-4 h-4 text-blue-600" />
-          <span>Transparent EWS Risk Calculation Formula</span>
-        </div>
-        <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200/80 leading-relaxed font-mono">
-          Composite Score (0–100) = [0.35 × (0.35·Freq + 0.35·AvgAff + 0.15·Pov + 0.15·Density)] + [0.65 × (0.45·Rainfall + 0.55·WaterStage)]
-        </p>
-        <div className="flex items-start gap-2 text-[11px] text-slate-500 pt-1">
-          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-          <span>
-            <strong>Decision Logic:</strong> Scores map deterministically to 4 actionable tiers: <strong>LOW (0–34)</strong> [Routine monitoring/preparation], <strong>MODERATE (35–59)</strong> [Flood readiness/preparation], <strong>HIGH (60–79)</strong> [Evacuation readiness/barrier deployment], and <strong>CRITICAL (80–100)</strong> [Immediate evacuation & seek high-ground shelter].
-          </span>
-        </div>
+        </section>
       </div>
     </div>
   );

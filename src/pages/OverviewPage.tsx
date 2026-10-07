@@ -1,335 +1,323 @@
-import React from 'react';
-import { 
-  Globe2, 
-  Activity, 
-  Flame, 
-  Users, 
-  ShieldAlert, 
-  ArrowUpRight, 
-  ChevronRight,
-  Sparkles,
-  Layers
-} from 'lucide-react';
+import React, { useMemo } from 'react';
 import { useEWS } from '../context/EWSContext';
-import { SYSTEM_OVERVIEW_STATS, ASEAN_COUNTRIES, PRESET_SCENARIOS } from '../data/aseanData';
-import { ArchitectureFlow } from '../components/common/ArchitectureFlow';
+
+interface CountryItem {
+  name: string;
+  code: string;
+  score: number | null;
+  level: 'low' | 'mod' | 'high' | 'crit' | 'na';
+}
+
+const COUNTRIES_LIST: CountryItem[] = [
+  { name: 'Indonesia', code: 'IDN', score: 62, level: 'high' },
+  { name: 'Thailand', code: 'THA', score: 55, level: 'high' },
+  { name: 'Philippines', code: 'PHL', score: 44, level: 'mod' },
+  { name: 'Vietnam', code: 'VNM', score: 38, level: 'mod' },
+  { name: 'Malaysia', code: 'MYS', score: 27, level: 'low' },
+  { name: 'Myanmar', code: 'MMR', score: 33, level: 'mod' },
+  { name: 'Cambodia', code: 'CAM', score: 21, level: 'low' },
+  { name: 'Laos', code: 'LAO', score: 18, level: 'low' },
+  { name: 'Singapore', code: 'SGP', score: null, level: 'na' },
+  { name: 'Brunei', code: 'BRN', score: null, level: 'na' },
+  { name: 'Timor-Leste', code: 'TLS', score: null, level: 'na' },
+];
 
 export const OverviewPage: React.FC = () => {
-  const { 
-    threatAssessment, 
-    selectedCountry, 
-    setSelectedCountryId, 
-    setActiveTab,
-    loadPresetScenario,
-    startPresentationTour
+  const {
+    selectedCountry,
+    setSelectedCountryId,
+    selectedStation,
+    simulatedRainfall,
+    simulatedWaterLevel,
+    threatAssessment
   } = useEWS();
 
+  // Color mapping based on threat level
+  const threatColorVar = useMemo(() => {
+    switch (threatAssessment.level) {
+      case 'CRITICAL': return 'var(--crit)';
+      case 'HIGH': return 'var(--high)';
+      case 'MODERATE': return 'var(--mod)';
+      case 'LOW':
+      default: return 'var(--low)';
+    }
+  }, [threatAssessment.level]);
+
+  // Dynamic ranking list
+  const rankedCountries = useMemo(() => {
+    const list = COUNTRIES_LIST.map(c => {
+      if (c.name === selectedCountry.name) {
+        return {
+          ...c,
+          score: threatAssessment.score,
+          level: (threatAssessment.level === 'CRITICAL' ? 'crit' :
+                  threatAssessment.level === 'HIGH' ? 'high' :
+                  threatAssessment.level === 'MODERATE' ? 'mod' : 'low') as CountryItem['level']
+        };
+      }
+      return c;
+    });
+
+    return list
+      .filter((c): c is CountryItem & { score: number } => c.score !== null)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  }, [selectedCountry.name, threatAssessment.score, threatAssessment.level]);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Top Banner & Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-1">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
-              Overview Dashboard
+    <div className="space-y-[20px] w-full">
+      {/* Hero Card */}
+      <section 
+        className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-[24px] items-center bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[18px_24px]"
+        style={{ borderLeft: `8px solid ${threatColorVar}` }}
+        aria-label="Current threat"
+      >
+        <div className="text-[30px] font-bold" style={{ color: threatColorVar }}>
+          <span className="block text-[13px] font-normal text-[var(--muted)]">
+            {selectedCountry.name}
+          </span>
+          {threatAssessment.level}
+          <span className="block text-[13px] font-normal text-[var(--muted)]">
+            Composite risk {threatAssessment.score}/100
+          </span>
+          <div className="h-[8px] bg-[var(--line)] rounded-[4px] mt-[6px] w-[140px] overflow-hidden">
+            <i 
+              className="block h-full rounded-[4px] transition-all duration-300" 
+              style={{ width: `${Math.min(100, Math.max(5, threatAssessment.score))}%`, background: threatColorVar }}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-[32px] flex-wrap items-center">
+          <div>
+            <b className="block text-[24px] font-bold text-[var(--ink)]">
+              {simulatedRainfall} mm/h
+            </b>
+            <span className="text-[13px] text-[var(--muted)]">Rainfall</span>
+          </div>
+
+          <div>
+            <b className="block text-[24px] font-bold text-[var(--ink)]">
+              {simulatedWaterLevel.toFixed(1)} m
+            </b>
+            <span className="text-[13px] text-[var(--muted)]">
+              River stage · {selectedStation ? selectedStation.name.split(' - ')[0] : (selectedCountry.basin ? selectedCountry.basin.split(' ')[0] : 'basin')}
             </span>
-            <span className="text-xs text-slate-500">
-              Historical Temporal Range: 2000–2023
-            </span>
           </div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 mt-1 tracking-tight">
-            ASEAN Regional Flood Monitoring Overview
-          </h2>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-            Integrated early warning interface synthesizing multi-decade historical disaster exposure with simulated real-time hydrological data.
-          </p>
-        </div>
 
-        {/* Action button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={startPresentationTour}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Launch Demo Story Walkthrough</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 5 Clean Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Countries Monitored */}
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-medium">Countries Monitored</span>
-              <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
-                <Globe2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-slate-900">8</span>
-              <span className="text-xs text-slate-500">/ 11 ASEAN States</span>
-            </div>
+            <b className="block text-[24px] font-bold text-[var(--ink)]">
+              {selectedCountry.vulnerabilityLevel || 'High'}
+            </b>
+            <span className="text-[13px] text-[var(--muted)]">Regional vulnerability</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            8 full datasets; 2 unavail, 1 partial
-          </p>
-        </div>
 
-        {/* Card 2: Total Recorded Flood Events */}
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-medium">Total Flood Events</span>
-              <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
-                <Activity className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-slate-900">
-                {SYSTEM_OVERVIEW_STATS.totalRecordedFloodEvents}
-              </span>
-              <span className="text-xs text-slate-500">Events (2000–2023)</span>
-            </div>
+            <b className="block text-[24px] font-bold text-[var(--ink)]">
+              14:21
+            </b>
+            <span className="text-[13px] text-[var(--muted)]">Last updated (simulated)</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            118.0M cumulative affected population
+        </div>
+      </section>
+
+      {/* Grid: Risk by country & Highest risk now */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[20px]">
+        {/* Risk by country */}
+        <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+          <h2 className="text-[15px] font-semibold text-[var(--ink)] m-0 mb-[4px]">Risk by country</h2>
+          <p className="text-[13px] text-[var(--muted)] m-0 mb-[12px]">
+            Select a country. Hatched = no dataset available.
           </p>
-        </div>
 
-        {/* Card 3: Highest Flood Frequency */}
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-medium">Highest Frequency</span>
-              <div className="w-7 h-7 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600">
-                <Flame className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold text-slate-900 truncate">Indonesia</span>
-              <span className="text-xs font-bold text-red-600">195</span>
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            33.4% of total recorded ASEAN events
-          </p>
-        </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-[8px]">
+            {COUNTRIES_LIST.map((c) => {
+              const isSelected = c.name === selectedCountry.name;
+              const isNa = c.level === 'na';
+              const displayScore = isSelected ? threatAssessment.score : c.score;
+              const currentLevel = isSelected ? 
+                (threatAssessment.level === 'CRITICAL' ? 'crit' :
+                 threatAssessment.level === 'HIGH' ? 'high' :
+                 threatAssessment.level === 'MODERATE' ? 'mod' : 'low') : c.level;
 
-        {/* Card 4: Highest Avg Affected Population */}
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-medium">Highest Avg Affected</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-                <Users className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold text-slate-900 truncate">Thailand</span>
-              <span className="text-xs font-bold text-amber-700">642k</span>
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            642,185 avg affected / flood disaster
-          </p>
-        </div>
-
-        {/* Card 5: Current Threat Level (Soft Tinted Background) */}
-        <div className={`p-4 rounded-xl border shadow-sm flex flex-col justify-between transition-all ${threatAssessment.bgBadge}`}>
-          <div>
-            <div className="flex items-center justify-between text-slate-600 mb-2">
-              <span className="text-xs font-semibold">Current Threat</span>
-              <div className="w-7 h-7 rounded-lg bg-white/80 border border-current/20 flex items-center justify-center">
-                <ShieldAlert className={`w-4 h-4 ${threatAssessment.color}`} />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${threatAssessment.pulseColor}`} />
-              <span className={`text-xl font-bold ${threatAssessment.color}`}>
-                {threatAssessment.level}
-              </span>
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-600 mt-2 truncate font-medium">
-            {selectedCountry.name} (Score: {threatAssessment.score}/100)
-          </p>
-        </div>
-      </div>
-
-      {/* Interactive Core Architecture Flow */}
-      <ArchitectureFlow />
-
-      {/* Regional Status Grid & Demonstration Scenarios */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Country Monitoring Status Table */}
-        <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-600" />
-                ASEAN Country Disaster Profile & Baseline Status
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Select any country to synchronize active focus across all monitoring maps and analytical models
-              </p>
-            </div>
-            <button
-              onClick={() => setActiveTab('historical-data')}
-              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold"
-            >
-              <span>Full Analytics</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 text-slate-400 font-medium text-[11px]">
-                  <th className="pb-2 pl-2">Country</th>
-                  <th className="pb-2 text-right">Flood Events</th>
-                  <th className="pb-2 text-right">Avg Affected</th>
-                  <th className="pb-2 text-right">Avg Poverty</th>
-                  <th className="pb-2 text-right">Vulnerability Status</th>
-                  <th className="pb-2 text-right pr-2">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {ASEAN_COUNTRIES.map((country) => {
-                  const isSelected = selectedCountry.id === country.id;
-                  return (
-                    <tr
-                      key={country.id}
-                      onClick={() => setSelectedCountryId(country.id)}
-                      className={`cursor-pointer transition-colors ${
-                        isSelected ? 'bg-blue-50/70 text-blue-950 font-medium' : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <td className="py-2.5 pl-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${
-                            !country.dataAvailable ? 'bg-slate-300' : isSelected ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-emerald-500'
-                          }`} />
-                          <span className="font-semibold text-slate-900">
-                            {country.name}
-                          </span>
-                          {country.isPartialPoverty && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                              partial pov
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2.5 text-right font-medium">
-                        {country.events !== null ? (
-                          <span className="text-slate-900">{country.events}</span>
-                        ) : (
-                          <span className="text-slate-400 italic">Data unavail.</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 text-right text-slate-600">
-                        {country.avgAffected !== null ? (
-                          <span>{Math.round(country.avgAffected).toLocaleString()}</span>
-                        ) : (
-                          <span className="text-slate-400 italic">N/A</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 text-right text-slate-600">
-                        {country.povertyRate !== null ? (
-                          <span>{country.povertyRate}%</span>
-                        ) : (
-                          <span className="text-slate-400 italic">N/A</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
-                          !country.dataAvailable
-                            ? 'bg-slate-100 border-slate-200 text-slate-500'
-                            : country.vulnerabilityLevel.includes('High')
-                            ? 'bg-red-50 border-red-200 text-red-700'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                        }`}>
-                          {country.vulnerabilityLevel}
-                        </span>
-                      </td>
-                      <td className="py-2.5 text-right pr-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCountryId(country.id);
-                            setActiveTab('risk-map');
-                          }}
-                          className="px-2 py-1 rounded bg-slate-100 hover:bg-blue-600 text-[11px] text-slate-600 hover:text-white transition-colors"
-                        >
-                          View Map
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right 1 Col: Quick Simulation Presets */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm mb-1">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Simulation Presets</span>
-            </div>
-            <p className="text-xs text-slate-500 mb-3">
-              Load preset weather scenarios to test the EWS dynamic response:
-            </p>
-
-            <div className="space-y-2">
-              {PRESET_SCENARIOS.map((preset) => (
-                <div
-                  key={preset.id}
-                  onClick={() => loadPresetScenario(preset)}
-                  className="cursor-pointer p-3 rounded-lg bg-slate-50 hover:bg-blue-50/50 border border-slate-200/80 hover:border-blue-200 transition-all group"
+              return (
+                <button
+                  key={c.code}
+                  disabled={isNa}
+                  title={c.name}
+                  onClick={() => {
+                    const countryMap: Record<string, string> = {
+                      'IDN': 'IDN', 'THA': 'THA', 'PHL': 'PHL', 'VNM': 'VNM',
+                      'MYS': 'MYS', 'MMR': 'MMR', 'CAM': 'KHM', 'LAO': 'LAO'
+                    };
+                    const targetId = countryMap[c.code] || c.code;
+                    setSelectedCountryId(targetId);
+                  }}
+                  style={{
+                    backgroundColor: isNa ? undefined : `var(--${currentLevel})`,
+                    backgroundImage: isNa ? 'repeating-linear-gradient(45deg, var(--panel), var(--panel) 5px, var(--line) 5px, var(--line) 8px)' : undefined,
+                    borderColor: isSelected ? 'var(--ink)' : 'transparent'
+                  }}
+                  className={`border-2 rounded-[6px] p-[10px_4px] text-center text-[13px] font-semibold transition-all ${
+                    isNa ? 'text-[var(--muted)] cursor-default' : 'text-white cursor-pointer hover:opacity-90'
+                  }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
-                      {preset.title}
-                    </span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                      preset.threatLevel === 'CRITICAL' ? 'bg-red-50 text-red-700 border-red-200' :
-                      preset.threatLevel === 'HIGH' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                      preset.threatLevel === 'MODERATE' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}>
-                      {preset.threatLevel}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    {preset.description}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-600 font-medium">
-                    <span>Rain: {preset.simulatedRainfall} mm/h</span>
-                    <span>Stage: {preset.simulatedWaterLevel} m</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  {c.code}
+                  <small className="block font-normal opacity-90 text-[11px] mt-0.5">
+                    {displayScore !== null ? displayScore : 'n/a'}
+                  </small>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Custom simulation sliders:</span>
-            <button
-              onClick={() => setActiveTab('risk-analysis')}
-              className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
-            >
-              <span>Risk Controls</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex gap-[14px] mt-[12px] text-[12px] text-[var(--muted)] flex-wrap items-center">
+            <span className="flex items-center gap-[4px]">
+              <i className="w-[10px] h-[10px] rounded-[2px] inline-block" style={{ background: 'var(--low)' }} />
+              Low
+            </span>
+            <span className="flex items-center gap-[4px]">
+              <i className="w-[10px] h-[10px] rounded-[2px] inline-block" style={{ background: 'var(--mod)' }} />
+              Moderate
+            </span>
+            <span className="flex items-center gap-[4px]">
+              <i className="w-[10px] h-[10px] rounded-[2px] inline-block" style={{ background: 'var(--high)' }} />
+              High
+            </span>
+            <span className="flex items-center gap-[4px]">
+              <i className="w-[10px] h-[10px] rounded-[2px] inline-block" style={{ background: 'var(--crit)' }} />
+              Critical
+            </span>
+            <span className="ml-auto text-[var(--muted)]">
+              8 full · 1 partial · 2 unavailable
+            </span>
+          </div>
+        </section>
+
+        {/* Highest risk now */}
+        <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+          <h2 className="text-[15px] font-semibold text-[var(--ink)] m-0 mb-[4px]">Highest risk now</h2>
+          <p className="text-[13px] text-[var(--muted)] m-0 mb-[12px]">Ranked by composite score</p>
+
+          <ol className="list-none m-0 p-0">
+            {rankedCountries.map((c, idx) => {
+              const levelLabel = c.level === 'high' ? 'High' : c.level === 'mod' ? 'Moderate' : c.level === 'crit' ? 'Critical' : 'Low';
+              return (
+                <li 
+                  key={c.code}
+                  className={`flex items-center gap-[10px] py-[8px] ${idx < rankedCountries.length - 1 ? 'border-b border-[var(--line)]' : ''}`}
+                >
+                  <span 
+                    className="w-[10px] h-[10px] rounded-full flex-none" 
+                    style={{ background: `var(--${c.level})` }}
+                  />
+                  <span className="font-medium text-[var(--ink)] text-[14px]">{c.name}</span>
+                  <span className="text-[12px] text-[var(--muted)]">{levelLabel}</span>
+                  <em className="ml-auto not-italic font-bold text-[var(--ink)] text-[14px]">
+                    {c.score}
+                  </em>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      </div>
+
+      {/* History section */}
+      <div>
+        <h3 className="m-0 mb-[8px] text-[13px] text-[var(--muted)] font-semibold">
+          History · ASEAN-wide, 2000–2023
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[12px]">
+          {/* Card 1 */}
+          <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-col justify-between">
+            <div>
+              <span className="text-[13px] text-[var(--muted)] block">Recorded flood events</span>
+              <b className="text-[22px] font-bold text-[var(--ink)] block mt-0.5">584</b>
+              <span className="text-[13px] text-[var(--muted)] block">118.0M people affected</span>
+            </div>
+            <svg className="w-full h-[28px] mt-[6px]" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <polyline 
+                fill="none" 
+                stroke="var(--sea)" 
+                strokeWidth="2" 
+                points="0,22 10,20 20,24 30,15 40,17 50,10 60,14 70,8 80,12 90,5 100,9" 
+              />
+            </svg>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+            <span className="text-[13px] text-[var(--muted)] block">Most events</span>
+            <b className="text-[22px] font-bold text-[var(--ink)] block mt-0.5">Indonesia · 195</b>
+            <span className="text-[13px] text-[var(--muted)] block">33.4% of ASEAN total</span>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+            <span className="text-[13px] text-[var(--muted)] block">Most affected per flood</span>
+            <b className="text-[22px] font-bold text-[var(--ink)] block mt-0.5">Thailand · 642k</b>
+            <span className="text-[13px] text-[var(--muted)] block">average people</span>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+            <span className="text-[13px] text-[var(--muted)] block">Data coverage</span>
+            <b className="text-[22px] font-bold text-[var(--ink)] block mt-0.5">8 of 11</b>
+            <span className="text-[13px] text-[var(--muted)] block">countries fully covered</span>
           </div>
         </div>
       </div>
+
+      {/* Warning Pipeline section */}
+      <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px]">
+        <h2 className="text-[15px] font-semibold text-[var(--ink)] m-0 mb-[4px]">How a warning is produced</h2>
+        <p className="text-[13px] text-[var(--muted)] m-0 mb-[12px]">
+          Values shown for the selected country.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-0">
+          <div className="p-[12px_12px_12px_16px] border-t-[3px]" style={{ borderColor: 'var(--sea)' }}>
+            <b className="block text-[14px] text-[var(--ink)]">Historical</b>
+            <span className="text-[13px] text-[var(--muted)] block">Events 2000–2023</span>
+            <span className="text-[20px] font-bold text-[var(--ink)] block mt-[4px]">
+              {selectedCountry.events ?? 195}
+            </span>
+          </div>
+
+          <div className="p-[12px_12px_12px_16px] border-t-[3px]" style={{ borderColor: 'var(--sea)' }}>
+            <b className="block text-[14px] text-[var(--ink)]">Spatial</b>
+            <span className="text-[13px] text-[var(--muted)] block">Vulnerability</span>
+            <span className="text-[20px] font-bold text-[var(--ink)] block mt-[4px]">
+              {selectedCountry.vulnerabilityLevel ?? 'High'}
+            </span>
+          </div>
+
+          <div className="p-[12px_12px_12px_16px] border-t-[3px]" style={{ borderColor: threatColorVar }}>
+            <b className="block text-[14px] text-[var(--ink)]">Live sensors</b>
+            <span className="text-[13px] text-[var(--muted)] block">Rainfall / stage</span>
+            <span className="text-[20px] font-bold text-[var(--ink)] block mt-[4px]">
+              {simulatedRainfall} mm/h
+            </span>
+          </div>
+
+          <div className="p-[12px_12px_12px_16px] border-t-[3px]" style={{ borderColor: 'var(--sea)' }}>
+            <b className="block text-[14px] text-[var(--ink)]">Risk score</b>
+            <span className="text-[13px] text-[var(--muted)] block">Composite</span>
+            <span className="text-[20px] font-bold text-[var(--ink)] block mt-[4px]">
+              {threatAssessment.score}/100
+            </span>
+          </div>
+
+          <div className="p-[12px_12px_12px_16px] border-t-[3px]" style={{ borderColor: 'var(--sea)' }}>
+            <b className="block text-[14px] text-[var(--ink)]">Actions</b>
+            <span className="text-[13px] text-[var(--muted)] block">Recommended</span>
+            <span className="text-[20px] font-bold text-[var(--ink)] block mt-[4px]">
+              {threatAssessment.recommendedActions.length} open
+            </span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

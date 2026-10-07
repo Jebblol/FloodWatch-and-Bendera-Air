@@ -1,117 +1,166 @@
-import React from 'react';
-import { 
-  Globe2, 
-  PlayCircle, 
-  RotateCcw,
-  Sparkles,
-  ChevronDown,
-  Info
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useEWS } from '../../context/EWSContext';
-import { ASEAN_COUNTRIES } from '../../data/aseanData';
+import { ASEAN_COUNTRIES, PRESET_SCENARIOS } from '../../data/aseanData';
 
-export const Header: React.FC = () => {
-  const { 
-    selectedCountry, 
-    setSelectedCountryId, 
-    threatAssessment,
-    isPresentationMode,
-    startPresentationTour,
-    resetSimulationToDefaults
-  } = useEWS();
-
-  return (
-    <header className="h-14 border-b border-slate-200/80 bg-white/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 transition-all">
-      {/* Left: Refined EWS Logo & Status Indicator */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Minimal Flood / Wave EWS Brand Mark */}
-        <div 
-          className="group flex items-center gap-2 cursor-pointer select-none"
-          title="ASEAN Early Warning System"
-        >
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shadow-blue-500/20 text-white transition-transform group-hover:scale-105 shrink-0">
-            <svg 
-              className="w-4.5 h-4.5 text-white" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2.2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M7 6a10 10 0 0 1 10 0" strokeOpacity="0.75" />
-              <path d="M2 13c3.5-3.5 6.5 1.5 10-1.5s6.5-1.5 10 1.5" />
-              <path d="M2 18c3.5-3.5 6.5 1.5 10-1.5s6.5-1.5 10 1.5" strokeOpacity="0.65" />
-              <circle cx="12" cy="7.5" r="1.25" fill="currentColor" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Quiet System Status Indicator */}
-        <div className="hidden xs:flex items-center gap-1.5 sm:gap-2 sm:pl-3 sm:border-l sm:border-slate-100 text-xs text-slate-500">
-          <span className="flex h-2 w-2 relative shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="font-medium text-slate-600 text-[11px] sm:text-xs">Live</span>
-        </div>
-      </div>
-
-      {/* Right Controls: Country Selector, Reset, Guided Tour, Threat Status */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-        {/* Compact Country Selector Dropdown */}
-        <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-lg px-2 sm:px-2.5 py-1 sm:py-1.5 transition-colors max-w-[100px] xs:max-w-[125px] sm:max-w-none shrink min-w-0">
-          <Globe2 className="w-3.5 h-3.5 text-slate-400 mr-1 sm:mr-1.5 shrink-0" />
-          <select
-            value={selectedCountry.id}
-            onChange={(e) => setSelectedCountryId(e.target.value)}
-            className="bg-transparent text-[11px] sm:text-xs font-medium text-slate-700 outline-none cursor-pointer pr-3.5 sm:pr-4 appearance-none truncate w-full"
-            aria-label="Select Country"
-          >
-            {ASEAN_COUNTRIES.map((country) => (
-              <option key={country.id} value={country.id} className="bg-white text-slate-800">
-                {country.name} {!country.dataAvailable ? '(No Data)' : ''}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1 sm:right-2 pointer-events-none" />
-        </div>
-
-        {/* Reset Sensor Baseline Button */}
-        <button
-          onClick={resetSimulationToDefaults}
-          title="Reset sensor simulation to defaults"
-          className="p-1.5 sm:px-2.5 sm:py-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100/80 rounded-lg border border-slate-200/80 transition-colors hidden sm:flex items-center gap-1.5 text-xs font-medium shrink-0"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-          <span className="hidden lg:inline text-slate-600">Reset</span>
-        </button>
-
-        {/* Guided Demo Button */}
-        {!isPresentationMode ? (
-          <button
-            onClick={startPresentationTour}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-medium transition-colors shadow-sm shadow-blue-500/10 shrink-0"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-100 shrink-0" />
-            <span className="hidden sm:inline">Guided Tour</span>
-            <span className="sm:hidden text-[10px] font-semibold">Tour</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] sm:text-xs font-medium shrink-0">
-            <PlayCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="hidden sm:inline">Demo Mode</span>
-            <span className="sm:hidden text-[10px] font-semibold">Demo</span>
-          </div>
-        )}
-
-        {/* Threat Level Status Pill */}
-        <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs font-medium shrink-0 ${threatAssessment.bgBadge}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${threatAssessment.pulseColor}`} />
-          <span className="font-semibold text-[10px] sm:text-xs">{threatAssessment.level}</span>
-        </div>
-      </div>
-    </header>
-  );
+const TAB_TITLES: Record<string, string> = {
+  'overview': 'Overview',
+  'historical-data': 'Historical data',
+  'risk-map': 'Risk map',
+  'live-monitoring': 'Live monitoring',
+  'risk-analysis': 'Risk analysis',
+  'alerts': 'Alerts',
+  'emergency-actions': 'Emergency actions',
+  'disclaimer': 'Disclaimer'
 };
 
+export const Header: React.FC = () => {
+  const {
+    activeTab,
+    selectedCountry,
+    setSelectedCountryId,
+    loadPresetScenario,
+    startPresentationTour,
+    setActiveTab
+  } = useEWS();
+
+  // Dark / Light Mode state
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('fw-theme');
+      if (saved) return saved === 'dark';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.setAttribute('data-theme', 'dark');
+      localStorage.setItem('fw-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+      localStorage.setItem('fw-theme', 'light');
+    }
+  }, [isDark]);
+
+  const [selectedScenarioTitle, setSelectedScenarioTitle] = useState<string>('Live feed');
+  const [showSimInfo, setShowSimInfo] = useState<boolean>(false);
+
+  const handleScenarioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedScenarioTitle(val);
+    if (val === 'Live feed') {
+      // Keep or reset
+    } else if (val.includes('IDN')) {
+      const scen = PRESET_SCENARIOS.find(s => s.countryId === 'IDN') || PRESET_SCENARIOS[0];
+      loadPresetScenario(scen);
+    } else if (val.includes('THA')) {
+      const scen = PRESET_SCENARIOS.find(s => s.countryId === 'THA') || PRESET_SCENARIOS[1];
+      loadPresetScenario(scen);
+    } else if (val.includes('PHL')) {
+      const scen = PRESET_SCENARIOS.find(s => s.countryId === 'PHL') || PRESET_SCENARIOS[2];
+      loadPresetScenario(scen);
+    }
+  };
+
+  return (
+    <>
+      <header className="w-full bg-[var(--panel)] border-b border-[var(--line)]">
+        <div className="max-w-[1200px] mx-auto px-[24px] py-[12px] flex items-center gap-[10px] flex-wrap">
+          <h1 className="text-[18px] font-semibold text-[var(--ink)] m-0 mr-auto">
+            {TAB_TITLES[activeTab] || 'Overview'}
+          </h1>
+
+          <label className="text-[12px] text-[var(--muted)] flex items-center gap-[6px]">
+            <span>Country</span>
+            <select
+              value={selectedCountry.name}
+              onChange={(e) => {
+                const found = ASEAN_COUNTRIES.find(c => c.name === e.target.value);
+                if (found) setSelectedCountryId(found.id);
+              }}
+              aria-label="Country"
+              className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-[10px] py-[6px] cursor-pointer text-[13px] outline-none"
+            >
+              {ASEAN_COUNTRIES.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-[12px] text-[var(--muted)] flex items-center gap-[6px]">
+            <span>Scenario</span>
+            <select
+              value={selectedScenarioTitle}
+              onChange={handleScenarioChange}
+              aria-label="Scenario"
+              className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-[10px] py-[6px] cursor-pointer text-[13px] outline-none"
+            >
+              <option value="Live feed">Live feed</option>
+              <option value="IDN — Critical: Monsoon flash surge">IDN — Critical: Monsoon flash surge</option>
+              <option value="THA — High: Monsoon inflow">THA — High: Monsoon inflow</option>
+              <option value="PHL — Moderate: Typhoon outer rainbands">PHL — Moderate: Typhoon outer rainbands</option>
+            </select>
+          </label>
+
+          <button
+            onClick={startPresentationTour}
+            className="bg-[var(--sea)] text-white border border-[var(--sea)] rounded-[6px] px-[12px] py-[6px] text-[13px] font-medium cursor-pointer transition-opacity hover:opacity-95"
+          >
+            Take the tour
+          </button>
+
+          <button
+            onClick={() => setShowSimInfo(true)}
+            title="Flood forecasts, risk scores and sensor readings are simulated for demonstration, not real-time predictions."
+            className="bg-[var(--bg)] border border-[var(--mod)] text-[var(--ink)] rounded-[6px] px-[10px] py-[6px] text-[13px] cursor-pointer hover:bg-[color-mix(in_srgb,var(--mod)_10%,transparent)] transition-colors"
+          >
+            Simulated data
+          </button>
+
+          <button
+            onClick={() => setIsDark(!isDark)}
+            aria-label="Toggle dark mode"
+            className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-[10px] py-[6px] text-[13px] cursor-pointer hover:bg-[color-mix(in_srgb,var(--sea)_8%,transparent)] transition-colors min-w-[50px] text-center"
+          >
+            {isDark ? 'Light' : 'Dark'}
+          </button>
+        </div>
+      </header>
+
+      {/* Simulated Data Modal Dialog */}
+      {showSimInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-[var(--panel)] border border-[var(--line)] text-[var(--ink)] max-w-md w-full rounded-lg p-5 shadow-lg space-y-4">
+            <h3 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--mod)]"></span>
+              Simulation Notice
+            </h3>
+            <p className="text-sm text-[var(--muted)] leading-relaxed">
+              All forecasts, risk scores, and hydrological sensor readings within this interface are simulated for academic demonstration purposes and ASEAN Data Science Explorers (DSE) 2026 presentation. They are not official real-time meteorological predictions.
+            </p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--line)]">
+              <button
+                onClick={() => {
+                  setShowSimInfo(false);
+                  setActiveTab('disclaimer');
+                }}
+                className="px-3 py-1.5 text-xs text-[var(--sea)] underline font-medium"
+              >
+                View Full Disclaimer
+              </button>
+              <button
+                onClick={() => setShowSimInfo(false)}
+                className="px-4 py-1.5 text-xs font-semibold rounded bg-[var(--sea)] text-white"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};

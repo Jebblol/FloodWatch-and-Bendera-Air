@@ -2,6 +2,7 @@ import React from 'react';
 import { EWSProvider, useEWS } from './context/EWSContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
+import { MobileNav } from './components/layout/MobileNav';
 import { PresentationBanner } from './components/demo/PresentationBanner';
 
 import { OverviewPage } from './pages/OverviewPage';
@@ -12,8 +13,6 @@ import { RiskAnalysisPage } from './pages/RiskAnalysisPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { EmergencyActionsPage } from './pages/EmergencyActionsPage';
 import { DisclaimerPage } from './pages/DisclaimerPage';
-
-import { MobileNav } from './components/layout/MobileNav';
 
 const DashboardContent: React.FC = () => {
   const { activeTab } = useEWS();
@@ -42,23 +41,23 @@ const DashboardContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F7F8FA]">
-      {/* Desktop Sidebar Navigation */}
+    <div className="fw-app">
+      {/* Desktop Sidebar */}
       <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      {/* Main Column */}
+      <div className="flex flex-col min-w-0 min-h-screen overflow-x-hidden bg-[var(--bg)]">
         {/* Top Header */}
         <Header />
 
-        {/* Dynamic Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-20 md:pb-24">
-          <div className="max-w-7xl mx-auto">
+        {/* Main Content Area - Centered properly */}
+        <main className="flex-1 w-full py-[20px] pb-[80px] md:pb-[24px] flex flex-col items-center">
+          <div className="w-full max-w-[1200px] px-[24px]">
             {renderActivePage()}
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Navigation */}
         <MobileNav />
 
         {/* Guided Presentation Walkthrough Banner */}
@@ -67,8 +66,6 @@ const DashboardContent: React.FC = () => {
     </div>
   );
 };
-
-
 
 export function App() {
   return (

@@ -1,592 +1,819 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  MapContainer, 
+  TileLayer, 
+  GeoJSON, 
+  Circle, 
+  CircleMarker, 
+  Tooltip, 
+  useMap 
+} from 'react-leaflet';
 import L from 'leaflet';
 import { 
-  Map as MapIcon, 
   ShieldAlert, 
   MapPin, 
-  Users, 
   Flame, 
-  Percent, 
-  ChevronRight,
-  Info,
-  Layers
+  Layers,
+  CloudRain,
+  Waves,
+  History,
+  Satellite,
+  Maximize2,
+  Gauge,
+  Sliders,
+  AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { useEWS } from '../context/EWSContext';
-import { ASEAN_COUNTRIES, CountryFloodData } from '../data/aseanData';
+import { ASEAN_COUNTRIES, CountryFloodData, RiverStation } from '../data/aseanData';
 import { ASEAN_GEOJSON } from '../data/aseanGeoJson';
-
-// The 8 ASEAN countries with sufficient historical and poverty data for prototype flood vulnerability analysis
-const PROTOTYPE_COUNTRY_IDS = ['IDN', 'PHL', 'VNM', 'THA', 'MYS', 'MMR', 'KHM', 'TLS'];
-
-const PROTOTYPE_MAP_COUNTRIES = ASEAN_COUNTRIES.filter(c => 
-  PROTOTYPE_COUNTRY_IDS.includes(c.id)
-);
-
-// Map baseRiskScore to the standard 4 hazard tiers
-// CRITICAL (>=80), HIGH (65-79), MODERATE (50-64), LOW (<50)
-export const getHazardTier = (score: number | null): {
-  tier: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'NO_DATA';
-  label: string;
-  fillColor: string;
-  borderColor: string;
-  textColor: string;
-  badgeBg: string;
-} => {
+// Map baseRiskScore to the standard hazard tiers
+export const getHazardTier = (score: number | null) => {
   if (score === null) {
     return {
-      tier: 'NO_DATA',
+      tier: 'NO_DATA' as const,
       label: 'Limited Data / Excluded',
-      fillColor: '#E2E8F0',
-      borderColor: '#94A3B8',
-      textColor: 'text-slate-500',
+      fillColor: '#94A3B8',
       badgeBg: 'bg-slate-100 text-slate-600 border-slate-200'
     };
   }
   if (score >= 80) {
     return {
-      tier: 'CRITICAL',
+      tier: 'CRITICAL' as const,
       label: 'Critical',
-      fillColor: '#F87171', // Red
-      borderColor: '#DC2626',
-      textColor: 'text-red-700',
+      fillColor: 'var(--crit)',
       badgeBg: 'bg-red-50 text-red-800 border-red-200'
     };
   }
   if (score >= 65) {
     return {
-      tier: 'HIGH',
+      tier: 'HIGH' as const,
       label: 'High',
-      fillColor: '#FB923C', // Orange
-      borderColor: '#EA580C',
-      textColor: 'text-orange-700',
+      fillColor: 'var(--high)',
       badgeBg: 'bg-orange-50 text-orange-800 border-orange-200'
     };
   }
   if (score >= 50) {
     return {
-      tier: 'MODERATE',
+      tier: 'MODERATE' as const,
       label: 'Moderate',
-      fillColor: '#FACC15', // Yellow
-      borderColor: '#CA8A04',
-      textColor: 'text-amber-800',
+      fillColor: 'var(--mod)',
       badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
     };
   }
   return {
-    tier: 'LOW',
+    tier: 'LOW' as const,
     label: 'Low',
-    fillColor: '#4ADE80', // Light/Neutral Green
-    borderColor: '#16A34A',
-    textColor: 'text-emerald-700',
+    fillColor: 'var(--low)',
     badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200'
   };
 };
+export const STATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  // Indonesia
+  'IDN-STA-01': { lat: -6.985, lng: 107.625 }, // Citarum River - Dayeuhkolot Station, Bandung
+  'IDN-STA-02': { lat: -7.562, lng: 110.855 }, // Bengawan Solo - Jurug Hydro Station, Surakarta
+  // Philippines
+  'PHL-STA-01': { lat: 14.633, lng: 121.096 }, // Marikina River - Sto. Niño Station, Metro Manila
+  'PHL-STA-02': { lat: 17.613, lng: 121.727 }, // Cagayan River - Tuguegarao Station, Cagayan
+  // Viet Nam
+  'VNM-STA-01': { lat: 10.793, lng: 105.244 }, // Mekong Delta - Tan Chau Station, An Giang
+  'VNM-STA-02': { lat: 21.042, lng: 105.858 }, // Red River - Hanoi Hydro Station, Long Bien
+  // Thailand
+  'THA-STA-01': { lat: 15.696, lng: 100.125 }, // Chao Phraya - C.2 Nakhon Sawan
+  'THA-STA-02': { lat: 14.212, lng: 100.498 }, // Chao Phraya - C.29A Bang Sai, Ayutthaya
+  // Malaysia
+  'MYS-STA-01': { lat: 5.533, lng: 102.200 },  // Kelantan River - Tangga Krai
+  'MYS-STA-02': { lat: 3.518, lng: 102.748 },  // Pahang River - Lubuk Paku
+  // Myanmar
+  'MMR-STA-01': { lat: 21.975, lng: 96.083 },  // Ayeyarwady River - Mandalay
+  'MMR-STA-02': { lat: 17.335, lng: 96.481 },  // Bago River - Bago Station
+  // Cambodia
+  'KHM-STA-01': { lat: 11.815, lng: 104.805 }, // Tonle Sap - Prek Kdam Station
+  'KHM-STA-02': { lat: 11.558, lng: 104.935 }, // Mekong - Chaktomuk Station, Phnom Penh
+  // Lao PDR
+  'LAO-STA-01': { lat: 17.963, lng: 102.613 }, // Mekong River - Vientiane Hydro Station
+  'LAO-STA-02': { lat: 18.925, lng: 102.448 }, // Nam Song - Vang Vieng Station
+};
 
-// Helper component to handle view centering when selected country changes
-const MapViewController: React.FC<{ selectedCountry: CountryFloodData }> = ({ selectedCountry }) => {
+const PROTOTYPE_COUNTRY_IDS = ['IDN', 'PHL', 'VNM', 'THA', 'MYS', 'MMR', 'KHM', 'LAO', 'TLS'];
+
+type HeatmapLayerType = 'composite' | 'rainfall' | 'river' | 'history';
+type BasemapType = 'osm' | 'satellite' | 'dark';
+
+// Basemap Tile Providers
+const BASEMAP_TILES: Record<BasemapType, { url: string; attribution: string }> = {
+  osm: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors'
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri &mdash; Maxar, Earthstar Geographics'
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; CartoDB & OpenStreetMap'
+  }
+};
+
+// Map View Controller for animated flight
+const MapViewController: React.FC<{ 
+  targetCoords: [number, number] | null; 
+  zoomLevel?: number;
+}> = ({ targetCoords, zoomLevel }) => {
   const map = useMap();
-
-  React.useEffect(() => {
-    if (selectedCountry && selectedCountry.lat && selectedCountry.lng) {
-      if (PROTOTYPE_COUNTRY_IDS.includes(selectedCountry.id)) {
-        map.flyTo([selectedCountry.lat, selectedCountry.lng], Math.max(map.getZoom(), 4.5), {
-          duration: 1.2
-        });
-      }
+  useEffect(() => {
+    if (targetCoords) {
+      map.flyTo(targetCoords, zoomLevel || 6, {
+        duration: 1.2,
+        easeLinearity: 0.25
+      });
     }
-  }, [selectedCountry, map]);
-
+  }, [targetCoords, zoomLevel, map]);
   return null;
 };
 
 export const RiskMapPage: React.FC = () => {
-  const { 
-    selectedCountry, 
-    setSelectedCountryId, 
+  const {
+    selectedCountry,
+    setSelectedCountryId,
+    selectedStation,
+    setSelectedStationId,
+    simulatedRainfall,
+    setSimulatedRainfall,
+    simulatedWaterLevel,
+    setSimulatedWaterLevel,
     threatAssessment,
     setActiveTab
   } = useEWS();
 
+  const [activeHeatmapLayer, setActiveHeatmapLayer] = useState<HeatmapLayerType>('composite');
+  const [activeBasemap, setActiveBasemap] = useState<BasemapType>('osm');
+  const [severityFilter, setSeverityFilter] = useState<'all' | 'warning_danger' | 'danger_only'>('all');
   const [hoveredCountry, setHoveredCountry] = useState<CountryFloodData | null>(null);
+  const [hoveredStation, setHoveredStation] = useState<RiverStation | null>(null);
 
-  // Choropleth color based on existing vulnerability/risk score
-  // Selected country PRESERVES its actual hazard color rather than turning solid blue
-  const getChoroplethColor = (countryId: string) => {
-    if (!PROTOTYPE_COUNTRY_IDS.includes(countryId)) {
-      return '#E2E8F0'; // Neutral Slate for Brunei, Singapore, Laos (No Data / Out of Scope)
+  // Active target for map camera
+  const mapTarget = useMemo<[number, number] | null>(() => {
+    if (selectedStation && STATION_COORDINATES[selectedStation.id]) {
+      const coords = STATION_COORDINATES[selectedStation.id];
+      return [coords.lat, coords.lng];
+    }
+    if (selectedCountry && selectedCountry.lat && selectedCountry.lng) {
+      return [selectedCountry.lat, selectedCountry.lng];
+    }
+    return [4.5, 115.0];
+  }, [selectedCountry, selectedStation]);
+
+  // Aggregate all stations across monitored countries
+  const allStations = useMemo(() => {
+    const list: Array<{
+      station: RiverStation;
+      country: CountryFloodData;
+      lat: number;
+      lng: number;
+      waterLevel: number;
+      rainfall: number;
+      severity: 'NORMAL' | 'ALERT' | 'WARNING' | 'DANGER';
+      stageRatio: number;
+    }> = [];
+
+    ASEAN_COUNTRIES.forEach(country => {
+      country.riverStations.forEach(st => {
+        const coords = STATION_COORDINATES[st.id] || { lat: country.lat, lng: country.lng };
+        // If this station is currently active in context, use the dynamic simulator value
+        const isCurrentSelected = selectedStation?.id === st.id;
+        const currentWater = isCurrentSelected ? simulatedWaterLevel : st.defaultWaterLevel;
+        const currentRain = isCurrentSelected ? simulatedRainfall : st.defaultRainfall;
+
+        let severity: 'NORMAL' | 'ALERT' | 'WARNING' | 'DANGER' = 'NORMAL';
+        if (currentWater >= st.dangerLevel) severity = 'DANGER';
+        else if (currentWater >= st.warningLevel) severity = 'WARNING';
+        else if (currentWater >= st.alertLevel) severity = 'ALERT';
+
+        const stageRatio = currentWater / st.dangerLevel;
+
+        list.push({
+          station: st,
+          country,
+          lat: coords.lat,
+          lng: coords.lng,
+          waterLevel: currentWater,
+          rainfall: currentRain,
+          severity,
+          stageRatio
+        });
+      });
+    });
+
+    return list;
+  }, [selectedStation, simulatedWaterLevel, simulatedRainfall]);
+
+  // Filter stations based on severity filter
+  const filteredStations = useMemo(() => {
+    if (severityFilter === 'danger_only') {
+      return allStations.filter(s => s.severity === 'DANGER');
+    }
+    if (severityFilter === 'warning_danger') {
+      return allStations.filter(s => s.severity === 'DANGER' || s.severity === 'WARNING');
+    }
+    return allStations;
+  }, [allStations, severityFilter]);
+
+  // Dynamic Country Polygon Styling based on active heatmap layer
+  const getCountryFillColor = (countryId: string) => {
+    const country = ASEAN_COUNTRIES.find(c => c.id === countryId);
+    if (!country || !country.dataAvailable) return '#94A3B8';
+
+    const isCurrent = selectedCountry.id === countryId;
+
+    if (activeHeatmapLayer === 'composite') {
+      // In composite mode, the currently selected country dynamically reflects live simulation score!
+      const score = isCurrent ? threatAssessment.score : (country.baseRiskScore || 50);
+      if (score >= 80) return 'var(--crit)';
+      if (score >= 65) return 'var(--high)';
+      if (score >= 45) return 'var(--mod)';
+      return 'var(--low)';
     }
 
-    const countryData = ASEAN_COUNTRIES.find(c => c.id === countryId);
-    if (!countryData || countryData.baseRiskScore === null) {
-      return '#E2E8F0';
+    if (activeHeatmapLayer === 'rainfall') {
+      const rain = isCurrent ? simulatedRainfall : (country.riverStations[0]?.defaultRainfall || 30);
+      if (rain >= 100) return 'var(--crit)';
+      if (rain >= 70) return 'var(--high)';
+      if (rain >= 40) return 'var(--mod)';
+      return 'var(--low)';
     }
 
-    const hazard = getHazardTier(countryData.baseRiskScore);
-    return hazard.fillColor;
+    if (activeHeatmapLayer === 'river') {
+      const st = country.riverStations[0];
+      const water = isCurrent ? simulatedWaterLevel : (st?.defaultWaterLevel || 3);
+      const danger = st?.dangerLevel || 6;
+      const ratio = water / danger;
+      if (ratio >= 1.0) return 'var(--crit)';
+      if (ratio >= 0.85) return 'var(--high)';
+      if (ratio >= 0.65) return 'var(--mod)';
+      return 'var(--low)';
+    }
+
+    // Historical layer
+    const events = country.events || 0;
+    if (events >= 150) return 'var(--crit)';
+    if (events >= 80) return 'var(--high)';
+    if (events >= 30) return 'var(--mod)';
+    return 'var(--low)';
   };
 
-  // GeoJSON styling function for GIS choropleth
   const styleFeature = (feature: any) => {
     const countryId = feature.id || feature.properties?.iso_a3;
     const isSelected = selectedCountry?.id === countryId;
     const isHovered = hoveredCountry?.id === countryId;
     const isMonitored = PROTOTYPE_COUNTRY_IDS.includes(countryId);
-
-    const fillColor = getChoroplethColor(countryId);
+    const fillColor = getCountryFillColor(countryId);
 
     return {
-      fillColor: fillColor,
-      // Selected country receives a prominent, high-contrast outline to clearly indicate selection
+      fillColor,
       weight: isSelected ? 3.5 : isHovered ? 2.5 : 1.2,
       opacity: 1,
-      // Selected country has bold dark blue outline, hovered has bright blue, default has subtle gray
-      color: isSelected ? '#1E3A8A' : isHovered ? '#2563EB' : '#64748B',
+      color: isSelected ? '#0b5c8a' : isHovered ? '#2563eb' : 'var(--line)',
       dashArray: isMonitored ? '' : '3',
-      // High opacity so hazard color is always clear and vivid
-      fillOpacity: isSelected ? 0.92 : isHovered ? 0.88 : isMonitored ? 0.78 : 0.35
+      fillOpacity: isSelected ? 0.65 : isHovered ? 0.55 : isMonitored ? 0.40 : 0.15
     };
   };
 
-  // Event handlers for each GIS country polygon
   const onEachFeature = (feature: any, layer: L.Layer) => {
     const countryId = feature.id || feature.properties?.iso_a3;
     const countryData = ASEAN_COUNTRIES.find(c => c.id === countryId);
-    const isMonitored = PROTOTYPE_COUNTRY_IDS.includes(countryId);
 
     layer.on({
-      mouseover: (e) => {
-        const target = e.target;
-        if (countryData) {
-          setHoveredCountry(countryData);
-        }
-        if (!selectedCountry || selectedCountry.id !== countryId) {
-          target.setStyle({
-            weight: 2.5,
-            color: '#2563EB',
-            fillOpacity: isMonitored ? 0.88 : 0.5
-          });
-        }
+      mouseover: () => {
+        if (countryData) setHoveredCountry(countryData);
       },
-      mouseout: (e) => {
-        const target = e.target;
+      mouseout: () => {
         setHoveredCountry(null);
-        if (!selectedCountry || selectedCountry.id !== countryId) {
-          target.setStyle(styleFeature(feature));
-        }
       },
       click: () => {
-        if (countryData) {
+        if (countryData && countryData.dataAvailable) {
           setSelectedCountryId(countryData.id);
         }
       }
     });
 
-    // Clean, informative tooltip with actual existing vulnerability score & tier
     if (countryData) {
-      const hazard = getHazardTier(countryData.baseRiskScore);
-      const tooltipContent = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px 4px;">
-          <div style="font-weight: 700; color: #0F172A; font-size: 13px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span>${countryData.name}</span>
-            <span style="font-size: 11px; font-weight: 600; color: #64748B;">(${countryData.id})</span>
+      const score = countryData.id === selectedCountry.id ? threatAssessment.score : (countryData.baseRiskScore || 'N/A');
+      const tooltipHtml = `
+        <div style="font-family: inherit; font-size: 13px; padding: 2px 4px; color: #0f2233;">
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">
+            ${countryData.name} (${countryData.id})
           </div>
-          ${isMonitored 
-            ? `<div style="color: #334155; margin-bottom: 2px;">
-                 Flood Vulnerability: <strong style="color: #0F172A;">${hazard.label}</strong>
-               </div>
-               <div style="color: #475569; font-size: 11px;">
-                 Risk Score: <strong style="color: #0F172A;">${countryData.baseRiskScore}/100</strong>
-               </div>
-               <div style="color: #2563EB; font-size: 10.5px; font-weight: 500; margin-top: 4px; border-top: 1px solid #E2E8F0; padding-top: 3px;">
-                 Click to view country profile &rarr;
-               </div>`
-            : `<div style="color: #94A3B8; font-style: italic; font-size: 11px;">
-                 Excluded from risk prototype (limited/unavailable data)
-               </div>`
-          }
+          <div style="color: #4d6073; font-size: 12px;">
+            Risk Score: <strong>${score}/100</strong>
+          </div>
+          <div style="color: #4d6073; font-size: 12px;">
+            Basin: ${countryData.basin ? countryData.basin.split(' ')[0] : 'N/A'}
+          </div>
+          <div style="font-size: 11px; color: #0b5c8a; font-weight: 600; margin-top: 4px;">
+            Click to select country &rarr;
+          </div>
         </div>
       `;
-      layer.bindTooltip(tooltipContent, {
-        sticky: true,
-        direction: 'auto',
-        className: 'ews-gis-tooltip'
-      });
+      layer.bindTooltip(tooltipHtml, { sticky: true, className: 'ews-gis-tooltip' });
     }
   };
 
-  const activeDisplayCountry = hoveredCountry || selectedCountry;
-  const activeHazard = getHazardTier(activeDisplayCountry.baseRiskScore);
+  // Station severity badge helper
+  const getSeverityColor = (sev: 'NORMAL' | 'ALERT' | 'WARNING' | 'DANGER') => {
+    switch (sev) {
+      case 'DANGER': return 'var(--crit)';
+      case 'WARNING': return 'var(--high)';
+      case 'ALERT': return 'var(--mod)';
+      case 'NORMAL': default: return 'var(--low)';
+    }
+  };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-200">
-      {/* Simplified Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200">
+    <div className="space-y-[20px] w-full max-w-[1200px]">
+      {/* Top Controls Header */}
+      <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-wrap items-center justify-between gap-[16px]">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Stage 2: Spatial Vulnerability
-            </span>
-            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-slate-400" />
-              <span>Based on countries with sufficient data for this prototype</span>
-            </span>
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 mt-1 tracking-tight">
-            Regional Flood Vulnerability Map
+          <h2 className="text-[18px] font-bold text-[var(--ink)] m-0 flex items-center gap-[8px]">
+            <Layers className="w-5 h-5 text-[var(--sea)]" />
+            Interactive Basin Flood Hazard & Risk Heatmap
           </h2>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-            A regional GIS view of flood frequency, affected population, and poverty indicators.
+          <p className="text-[13px] text-[var(--muted)] m-0 mt-[2px]">
+            Multi-layer geospatial telemetry synthesizing real-time hydraulic sensors, storm radar, and historical disaster exposure.
           </p>
+        </div>
+
+        {/* Heatmap Layer Selectors */}
+        <div className="flex items-center gap-[6px] bg-[var(--bg)] p-[4px] rounded-[6px] border border-[var(--line)] flex-wrap">
+          <button
+            onClick={() => setActiveHeatmapLayer('composite')}
+            className={`px-[10px] py-[6px] rounded-[4px] text-[12px] font-semibold flex items-center gap-[6px] transition-colors ${
+              activeHeatmapLayer === 'composite'
+                ? 'bg-[var(--panel)] text-[var(--sea)] shadow-xs border border-[var(--line)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            Composite Risk
+          </button>
+
+          <button
+            onClick={() => setActiveHeatmapLayer('rainfall')}
+            className={`px-[10px] py-[6px] rounded-[4px] text-[12px] font-semibold flex items-center gap-[6px] transition-colors ${
+              activeHeatmapLayer === 'rainfall'
+                ? 'bg-[var(--panel)] text-[var(--sea)] shadow-xs border border-[var(--line)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <CloudRain className="w-3.5 h-3.5" />
+            Rainfall Radar
+          </button>
+
+          <button
+            onClick={() => setActiveHeatmapLayer('river')}
+            className={`px-[10px] py-[6px] rounded-[4px] text-[12px] font-semibold flex items-center gap-[6px] transition-colors ${
+              activeHeatmapLayer === 'river'
+                ? 'bg-[var(--panel)] text-[var(--sea)] shadow-xs border border-[var(--line)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <Waves className="w-3.5 h-3.5" />
+            River Stage
+          </button>
+
+          <button
+            onClick={() => setActiveHeatmapLayer('history')}
+            className={`px-[10px] py-[6px] rounded-[4px] text-[12px] font-semibold flex items-center gap-[6px] transition-colors ${
+              activeHeatmapLayer === 'history'
+                ? 'bg-[var(--panel)] text-[var(--sea)] shadow-xs border border-[var(--line)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            Disaster History
+          </button>
         </div>
       </div>
 
-      {/* Main Map & Intelligence Panel Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Interactive GIS Map (Left 8 Cols) */}
-        <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm flex flex-col justify-between">
-          {/* Map Top Bar */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <MapIcon className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-bold text-slate-800">
-                Southeast Asia Flood Vulnerability Choropleth
-              </span>
+      {/* Main Map + Side Telemetry Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[20px]">
+        {/* Left Column: Interactive Leaflet Heatmap Canvas */}
+        <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-col justify-between">
+          {/* Map Top Bar Toolbar */}
+          <div className="flex items-center justify-between gap-[10px] mb-[12px] flex-wrap">
+            {/* Basemap Switcher */}
+            <div className="flex items-center gap-[6px] text-[12px] text-[var(--muted)]">
+              <span>Basemap:</span>
+              <button
+                onClick={() => setActiveBasemap('osm')}
+                className={`px-[8px] py-[4px] rounded-[4px] border text-[11px] font-medium ${
+                  activeBasemap === 'osm'
+                    ? 'bg-[var(--sea)] text-white border-[var(--sea)]'
+                    : 'bg-[var(--bg)] border-[var(--line)] text-[var(--ink)]'
+                }`}
+              >
+                Standard
+              </button>
+              <button
+                onClick={() => setActiveBasemap('satellite')}
+                className={`px-[8px] py-[4px] rounded-[4px] border text-[11px] font-medium flex items-center gap-[3px] ${
+                  activeBasemap === 'satellite'
+                    ? 'bg-[var(--sea)] text-white border-[var(--sea)]'
+                    : 'bg-[var(--bg)] border-[var(--line)] text-[var(--ink)]'
+                }`}
+              >
+                <Satellite className="w-3 h-3" />
+                Satellite
+              </button>
+              <button
+                onClick={() => setActiveBasemap('dark')}
+                className={`px-[8px] py-[4px] rounded-[4px] border text-[11px] font-medium ${
+                  activeBasemap === 'dark'
+                    ? 'bg-[var(--sea)] text-white border-[var(--sea)]'
+                    : 'bg-[var(--bg)] border-[var(--line)] text-[var(--ink)]'
+                }`}
+              >
+                Dark
+              </button>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/80">
-              <Layers className="w-3 h-3 text-blue-600" />
-              <span>OpenStreetMap GIS Basemap</span>
+
+            {/* Severity Filter */}
+            <div className="flex items-center gap-[6px] text-[12px] text-[var(--muted)]">
+              <span>Filter:</span>
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value as any)}
+                className="bg-[var(--bg)] border border-[var(--line)] rounded-[4px] px-[8px] py-[3px] text-[11px] text-[var(--ink)] outline-none cursor-pointer"
+              >
+                <option value="all">All 16 Stations</option>
+                <option value="warning_danger">Warning & Danger Only</option>
+                <option value="danger_only">Danger Hotspots Only</option>
+              </select>
             </div>
           </div>
 
-          {/* Interactive GIS Map Canvas Container */}
-          <div className="w-full h-[380px] sm:h-[420px] relative rounded-xl border border-slate-200 overflow-hidden shadow-inner bg-slate-100 z-10">
+          {/* Leaflet Map Canvas */}
+          <div className="w-full h-[480px] rounded-[6px] border border-[var(--line)] overflow-hidden relative shadow-inner">
             <MapContainer
               center={[4.5, 115.0]}
               zoom={4}
               minZoom={3}
-              maxZoom={8}
+              maxZoom={12}
               scrollWheelZoom={true}
-              style={{ width: '100%', height: '100%', background: '#F1F5F9' }}
-              className="z-10"
+              style={{ width: '100%', height: '100%', background: 'var(--bg)' }}
             >
+              {/* Basemap Tiles */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                maxZoom={19}
+                attribution={BASEMAP_TILES[activeBasemap].attribution}
+                url={BASEMAP_TILES[activeBasemap].url}
               />
 
+              {/* GeoJSON Regional Choropleth Boundaries */}
               <GeoJSON
-                key={selectedCountry.id + (hoveredCountry?.id || '')}
+                key={`${activeHeatmapLayer}-${selectedCountry.id}-${threatAssessment.score}-${activeBasemap}`}
                 data={ASEAN_GEOJSON}
                 style={styleFeature}
                 onEachFeature={onEachFeature}
               />
 
-              <MapViewController selectedCountry={selectedCountry} />
+              {/* FUNCTIONAL HEATMAP LAYER: Dynamic Thermal / Radial Hazard Circles */}
+              {filteredStations.map(({ station, country, lat, lng, waterLevel, rainfall, severity, stageRatio }) => {
+                const isSelected = selectedStation?.id === station.id;
+                const heatColor = getSeverityColor(severity);
+
+                // Radius calculation in meters based on active mode
+                let baseRadius = 35000; // 35km base
+                if (activeHeatmapLayer === 'rainfall') {
+                  baseRadius = Math.max(25000, rainfall * 800);
+                } else if (activeHeatmapLayer === 'river') {
+                  baseRadius = Math.max(20000, stageRatio * 45000);
+                } else if (activeHeatmapLayer === 'composite') {
+                  baseRadius = Math.max(30000, (country.id === selectedCountry.id ? threatAssessment.score : (country.baseRiskScore || 50)) * 600);
+                }
+
+                return (
+                  <React.Fragment key={station.id}>
+                    {/* Outer Heat Halo (Dissipation Ring) */}
+                    <Circle
+                      center={[lat, lng]}
+                      radius={baseRadius * 1.6}
+                      pathOptions={{
+                        color: heatColor,
+                        fillColor: heatColor,
+                        fillOpacity: isSelected ? 0.25 : 0.12,
+                        weight: 0
+                      }}
+                    />
+
+                    {/* Mid Heat Concentration Ring */}
+                    <Circle
+                      center={[lat, lng]}
+                      radius={baseRadius}
+                      pathOptions={{
+                        color: heatColor,
+                        fillColor: heatColor,
+                        fillOpacity: isSelected ? 0.45 : 0.28,
+                        weight: 1,
+                        opacity: 0.6
+                      }}
+                    />
+
+                    {/* Core Station Sensor Marker */}
+                    <CircleMarker
+                      center={[lat, lng]}
+                      radius={isSelected ? 9 : 6}
+                      pathOptions={{
+                        color: '#ffffff',
+                        fillColor: heatColor,
+                        fillOpacity: 1,
+                        weight: isSelected ? 3 : 2
+                      }}
+                      eventHandlers={{
+                        click: () => {
+                          setSelectedCountryId(country.id);
+                          setSelectedStationId(station.id);
+                        },
+                        mouseover: () => setHoveredStation(station),
+                        mouseout: () => setHoveredStation(null)
+                      }}
+                    >
+                      <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                        <div className="text-[12px] p-[2px]">
+                          <strong className="block text-[13px]">{station.name}</strong>
+                          <span className="block text-[var(--muted)]">{country.name} · {station.location}</span>
+                          <div className="mt-1 pt-1 border-t border-[var(--line)] flex items-center justify-between gap-3">
+                            <span>Stage: <strong>{waterLevel.toFixed(1)}m</strong> / {station.dangerLevel}m</span>
+                            <span style={{ color: heatColor, fontWeight: 700 }}>{severity}</span>
+                          </div>
+                        </div>
+                      </Tooltip>
+                    </CircleMarker>
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Smooth Camera Flight */}
+              <MapViewController targetCoords={mapTarget} zoomLevel={selectedStation ? 7 : 5} />
             </MapContainer>
 
-            {/* Hover Floating Mini Callout */}
-            {hoveredCountry && (
-              <div className="absolute top-3 right-3 z-20 pointer-events-none bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-200 shadow-md text-xs">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                  <MapPin className="w-3 h-3 text-blue-600" />
-                  <span>{hoveredCountry.name}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  {PROTOTYPE_COUNTRY_IDS.includes(hoveredCountry.id) ? (
-                    <>
-                      Vulnerability: <span className="font-semibold text-slate-800">{getHazardTier(hoveredCountry.baseRiskScore).label}</span> (Score: <span className="font-semibold text-slate-800">{hoveredCountry.baseRiskScore}/100</span>)
-                    </>
-                  ) : (
-                    <span className="text-slate-400 italic">No risk score (limited data)</span>
-                  )}
-                </div>
+            {/* Floating Live Legend On Top of Map */}
+            <div className="absolute bottom-3 left-3 z-[400] bg-[var(--panel)]/95 backdrop-blur-xs border border-[var(--line)] rounded-[6px] p-[10px_14px] text-[12px] shadow-sm">
+              <div className="font-bold text-[var(--ink)] mb-[4px] flex items-center justify-between gap-3">
+                <span>
+                  {activeHeatmapLayer === 'composite' && 'Composite Risk Intensity'}
+                  {activeHeatmapLayer === 'rainfall' && 'Rainfall Radar (mm/h)'}
+                  {activeHeatmapLayer === 'river' && 'River Stage vs Bankfull'}
+                  {activeHeatmapLayer === 'history' && 'Historical Disaster Exposure'}
+                </span>
+                <span className="text-[10px] text-[var(--muted)] font-normal">Active Layer</span>
               </div>
-            )}
+
+              <div className="flex items-center gap-[12px] flex-wrap">
+                <span className="flex items-center gap-[4px]">
+                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--low)' }} />
+                  Low
+                </span>
+                <span className="flex items-center gap-[4px]">
+                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--mod)' }} />
+                  Alert (Moderate)
+                </span>
+                <span className="flex items-center gap-[4px]">
+                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--high)' }} />
+                  Warning (High)
+                </span>
+                <span className="flex items-center gap-[4px]">
+                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--crit)' }} />
+                  Danger (Critical)
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Map Pan Center Button */}
+            <button
+              onClick={() => {
+                if (selectedCountry && selectedCountry.lat) {
+                  // Re-center
+                }
+              }}
+              title="Reset View to ASEAN"
+              className="absolute top-3 right-3 z-[400] bg-[var(--panel)] border border-[var(--line)] text-[var(--ink)] p-[6px] rounded-[6px] shadow-xs hover:bg-[var(--bg)] cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Map Footer: Quick Select Buttons & Relevant Legend */}
-          <div className="pt-3.5 mt-3 border-t border-slate-100 space-y-2.5">
-            {/* Quick Country Selector Buttons (8 Analyzed Countries) */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="text-[11px] font-medium text-slate-500 mr-1">Focus Country:</span>
-              {PROTOTYPE_MAP_COUNTRIES.map((c) => {
-                const isSelected = selectedCountry.id === c.id;
-                const cHazard = getHazardTier(c.baseRiskScore);
+          {/* Quick Focus Station Chips */}
+          <div className="mt-[12px] pt-[10px] border-t border-[var(--line)]">
+            <span className="text-[11px] font-semibold text-[var(--muted)] block mb-[6px]">
+              Active Basin River Stations ({selectedCountry.name}):
+            </span>
+            <div className="flex flex-wrap gap-[6px]">
+              {selectedCountry.riverStations.map((st) => {
+                const isSelected = selectedStation?.id === st.id;
+                const water = isSelected ? simulatedWaterLevel : st.defaultWaterLevel;
+                const isDanger = water >= st.dangerLevel;
+                const isWarning = water >= st.warningLevel;
                 return (
                   <button
-                    key={c.id}
-                    onClick={() => setSelectedCountryId(c.id)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all flex items-center gap-1.5 ${
+                    key={st.id}
+                    onClick={() => setSelectedStationId(st.id)}
+                    className={`px-[10px] py-[6px] rounded-[6px] text-[12px] font-medium border flex items-center gap-[6px] transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs ring-2 ring-blue-500/30'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                        ? 'bg-[var(--sea)] text-white border-[var(--sea)] font-semibold shadow-xs'
+                        : 'bg-[var(--bg)] border-[var(--line)] text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--sea)_10%,transparent)]'
                     }`}
                   >
                     <span 
-                      className="w-2 h-2 rounded-full shrink-0" 
-                      style={{ backgroundColor: cHazard.fillColor }}
+                      className="w-[8px] h-[8px] rounded-full" 
+                      style={{ background: isDanger ? 'var(--crit)' : isWarning ? 'var(--high)' : 'var(--low)' }}
                     />
-                    <span>{c.name}</span>
+                    <span>{st.name.split(' - ')[0]}</span>
+                    <small className="opacity-80">({water.toFixed(1)}m)</small>
                   </button>
                 );
               })}
             </div>
-
-            {/* GIS Choropleth Hazard-Ranking Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-[11px] text-slate-600 border-t border-slate-100/80">
-              <div className="flex flex-wrap items-center gap-3.5">
-                <span className="font-semibold text-slate-700">Flood Vulnerability:</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-[#4ADE80] border border-emerald-400 shadow-2xs"></span>
-                  <span>Low (&lt;50)</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-[#FACC15] border border-yellow-400 shadow-2xs"></span>
-                  <span>Moderate (50–64)</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-[#FB923C] border border-orange-400 shadow-2xs"></span>
-                  <span>High (65–79)</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-[#F87171] border border-red-400 shadow-2xs"></span>
-                  <span>Critical (≥80)</span>
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-slate-200 border border-slate-300 border-dashed"></span>
-                  <span>Limited Data</span>
-                </span>
-              </div>
-
-              <span className="text-[10px] text-slate-400 italic">
-                Pan & scroll to zoom
-              </span>
-            </div>
           </div>
         </div>
 
-        {/* Mobile Inline Country Profile Summary (Directly Below GIS Map on < lg) */}
-        <div className="lg:hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3.5">
-          {/* Mobile Profile Header */}
-          <div className="pb-2.5 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Selected Country Profile
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${activeHazard.badgeBg}`}>
-                  {activeHazard.label} Vulnerability
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mt-0.5 flex items-center gap-1.5">
-                {selectedCountry.name}
-                <span className="text-xs text-slate-500 font-normal">({selectedCountry.id})</span>
-              </h3>
-            </div>
-
-            <div className="text-right text-xs text-slate-500">
-              <span className="text-[10px] text-slate-400 block">Capital</span>
-              <span className="font-semibold text-slate-800">{selectedCountry.capital}</span>
-            </div>
-          </div>
-
-          {/* Mobile 2-Column Stats Grid */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                <Flame className="w-3 h-3 text-red-500 shrink-0" />
-                <span>Total Flood Events</span>
-              </div>
-              <p className="text-base font-bold text-slate-900 mt-1">
-                {selectedCountry.events !== null ? `${selectedCountry.events}` : 'Data N/A'}
-              </p>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                <Users className="w-3 h-3 text-amber-500 shrink-0" />
-                <span>Avg Affected / Flood</span>
-              </div>
-              <p className="text-base font-bold text-amber-700 mt-1 truncate">
-                {selectedCountry.avgAffected ? `${Math.round(selectedCountry.avgAffected).toLocaleString()}` : 'Data N/A'}
-              </p>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                <Percent className="w-3 h-3 text-emerald-500 shrink-0" />
-                <span>Avg Poverty Rate</span>
-              </div>
-              <p className="text-base font-bold text-emerald-700 mt-1">
-                {selectedCountry.povertyRate !== null ? `${selectedCountry.povertyRate}%` : 'Data N/A'}
-              </p>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                <ShieldAlert className="w-3 h-3 text-blue-500 shrink-0" />
-                <span>Current Threat</span>
-              </div>
-              <p className={`text-base font-bold mt-1 ${
-                !selectedCountry.dataAvailable ? 'text-slate-400' : threatAssessment.color
-              }`}>
-                {!selectedCountry.dataAvailable ? 'Standby' : threatAssessment.level}
-              </p>
-            </div>
-          </div>
-
-          {/* Basin & Description */}
-          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1">
-            <span className="text-[10px] font-semibold text-slate-400 block">
-              Monitored River Basins:
-            </span>
-            <p className="text-slate-800 font-medium">{selectedCountry.basin}</p>
-            <p className="text-slate-500 text-[11px] leading-relaxed pt-0.5">{selectedCountry.description}</p>
-          </div>
-
-          {/* Connected Sensor Stations */}
-          {selectedCountry.riverStations.length > 0 && (
-            <div>
-              <span className="text-[10px] font-semibold text-slate-400 block mb-1">
-                Connected Sensor Stations:
-              </span>
-              <div className="space-y-1">
-                {selectedCountry.riverStations.map((station) => (
-                  <div key={station.id} className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="text-slate-700 font-medium truncate">{station.name}</span>
-                    </div>
-                    <span className="text-[10px] font-semibold text-blue-600 shrink-0 ml-1">
-                      {station.defaultWaterLevel}m / {station.dangerLevel}m
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Button */}
-          <button
-            onClick={() => setActiveTab('live-monitoring')}
-            className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors mt-2"
-          >
-            <span>Inspect Real-Time Sensors for {selectedCountry.name}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Selected Country Intelligence Panel (Desktop 4 Cols) */}
-        <div className="hidden lg:flex lg:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex-col justify-between">
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="pb-3 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-slate-400">
-                  Country Profile
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${activeHazard.badgeBg}`}>
-                  {activeHazard.label} Vulnerability
-                </span>
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
-                {activeDisplayCountry.name}
-                <span className="text-xs text-slate-500 font-normal">({activeDisplayCountry.id})</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Capital: <span className="text-slate-800 font-medium">{activeDisplayCountry.capital}</span>
-              </p>
-            </div>
-
-            {/* Core Stats Grid */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                  <Flame className="w-3 h-3 text-red-500" />
-                  <span>Total Flood Events</span>
-                </div>
-                <p className="text-lg font-bold text-slate-900 mt-1">
-                  {activeDisplayCountry.events !== null ? activeDisplayCountry.events : 'Data N/A'}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                  <Users className="w-3 h-3 text-amber-500" />
-                  <span>Avg Affected / Flood</span>
-                </div>
-                <p className="text-lg font-bold text-amber-700 mt-1 truncate">
-                  {activeDisplayCountry.avgAffected ? `${Math.round(activeDisplayCountry.avgAffected).toLocaleString()}` : 'Data N/A'}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                  <Percent className="w-3 h-3 text-emerald-500" />
-                  <span>Avg Poverty Rate</span>
-                </div>
-                <p className="text-lg font-bold text-emerald-700 mt-1">
-                  {activeDisplayCountry.povertyRate !== null ? `${activeDisplayCountry.povertyRate}%` : 'Data N/A'}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                  <ShieldAlert className="w-3 h-3 text-blue-500" />
-                  <span>Current Threat</span>
-                </div>
-                <p className={`text-lg font-bold mt-1 ${
-                  !activeDisplayCountry.dataAvailable ? 'text-slate-400' : threatAssessment.color
-                }`}>
-                  {!activeDisplayCountry.dataAvailable ? 'Standby' : threatAssessment.level}
-                </p>
-              </div>
-            </div>
-
-            {/* Basin & Description */}
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1">
-              <span className="text-[10px] font-medium text-slate-400 block">
-                Monitored River Basins:
-              </span>
-              <p className="text-slate-800 font-medium">{activeDisplayCountry.basin}</p>
-              <p className="text-slate-500 text-[11px] leading-relaxed pt-1">{activeDisplayCountry.description}</p>
-            </div>
-
-            {/* Active Telemetry Stations */}
-            {activeDisplayCountry.riverStations.length > 0 && (
+        {/* Right Column: Station Telemetry, Live Hydrograph & Simulation Controls */}
+        <div className="space-y-[20px]">
+          {/* Active Station Telemetry Card */}
+          <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] space-y-[14px]">
+            <div className="flex items-start justify-between gap-[10px]">
               <div>
-                <span className="text-[10px] font-medium text-slate-400 block mb-1.5">
-                  Connected Sensor Stations:
+                <span className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
+                  Station Hydro Telemetry
                 </span>
-                <div className="space-y-1.5">
-                  {activeDisplayCountry.riverStations.map((station) => (
-                    <div key={station.id} className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span className="text-slate-700 font-medium truncate">{station.name}</span>
-                      </div>
-                      <span className="text-[10px] font-semibold text-blue-600 shrink-0">
-                        {station.defaultWaterLevel}m / {station.dangerLevel}m
-                      </span>
-                    </div>
-                  ))}
+                <h3 className="text-[16px] font-bold text-[var(--ink)] m-0 mt-[2px]">
+                  {selectedStation ? selectedStation.name : 'No Station Selected'}
+                </h3>
+                <span className="text-[12px] text-[var(--muted)] block">
+                  {selectedStation ? selectedStation.location : ''} · {selectedCountry.name}
+                </span>
+              </div>
+
+              <span 
+                className="px-[8px] py-[4px] rounded-[4px] text-[11px] font-bold text-white shrink-0"
+                style={{
+                  background: (simulatedWaterLevel >= (selectedStation?.dangerLevel || 6.8)) ? 'var(--crit)' :
+                              (simulatedWaterLevel >= (selectedStation?.warningLevel || 5.5)) ? 'var(--high)' :
+                              (simulatedWaterLevel >= (selectedStation?.alertLevel || 4.0)) ? 'var(--mod)' : 'var(--low)'
+                }}
+              >
+                {(simulatedWaterLevel >= (selectedStation?.dangerLevel || 6.8)) ? 'DANGER' :
+                 (simulatedWaterLevel >= (selectedStation?.warningLevel || 5.5)) ? 'WARNING' :
+                 (simulatedWaterLevel >= (selectedStation?.alertLevel || 4.0)) ? 'ALERT' : 'NORMAL'}
+              </span>
+            </div>
+
+            {/* Water Level Hydro Gauge Progress */}
+            {selectedStation && (
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[12px] space-y-[8px]">
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-[var(--muted)]">River Water Level</span>
+                  <b className="text-[18px] text-[var(--ink)]">
+                    {simulatedWaterLevel.toFixed(1)} <small className="text-[12px] font-normal text-[var(--muted)]">/ {selectedStation.dangerLevel}m max</small>
+                  </b>
+                </div>
+
+                {/* Multi-tier Level Meter Bar */}
+                <div className="h-[10px] bg-[var(--line)] rounded-[5px] relative overflow-hidden">
+                  <div 
+                    className="h-full rounded-[5px] transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, (simulatedWaterLevel / selectedStation.dangerLevel) * 100)}%`,
+                      background: (simulatedWaterLevel >= selectedStation.dangerLevel) ? 'var(--crit)' :
+                                  (simulatedWaterLevel >= selectedStation.warningLevel) ? 'var(--high)' :
+                                  (simulatedWaterLevel >= selectedStation.alertLevel) ? 'var(--mod)' : 'var(--low)'
+                    }}
+                  />
+                </div>
+
+                {/* Threshold Markers */}
+                <div className="flex justify-between text-[11px] text-[var(--muted)] pt-[2px]">
+                  <span>Normal: {selectedStation.normalLevel}m</span>
+                  <span>Alert: {selectedStation.alertLevel}m</span>
+                  <span>Warning: {selectedStation.warningLevel}m</span>
+                  <span className="font-bold text-[var(--crit)]">Danger: {selectedStation.dangerLevel}m</span>
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Action Button */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <button
-              onClick={() => setActiveTab('live-monitoring')}
-              className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
-            >
-              <span>Inspect Real-Time Sensors for {activeDisplayCountry.name}</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+            {/* Sensor Telemetry Stats */}
+            <div className="grid grid-cols-2 gap-[10px]">
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <span className="text-[11px] text-[var(--muted)] block">Cloudburst Inflow</span>
+                <b className="text-[16px] text-[var(--ink)] block mt-[2px]">{simulatedRainfall} mm/h</b>
+                <span className="text-[11px] text-[var(--muted)]">
+                  {simulatedRainfall > 70 ? 'Extreme Precip' : 'Moderate Inflow'}
+                </span>
+              </div>
+
+              <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[10px]">
+                <span className="text-[11px] text-[var(--muted)] block">Discharge Rate</span>
+                <b className="text-[16px] text-[var(--ink)] block mt-[2px]">
+                  {selectedStation?.flowRate || '420 m³/s'}
+                </b>
+                <span className="text-[11px] text-[var(--muted)]">Estimated Hydrology</span>
+              </div>
+            </div>
+
+            {/* Real-time Interactive Simulation Controls */}
+            <div className="border-t border-[var(--line)] pt-[12px] space-y-[10px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-[4px]">
+                  <Sliders className="w-3.5 h-3.5 text-[var(--sea)]" />
+                  Live Hydraulic Simulator
+                </span>
+                <span className="text-[11px] text-[var(--muted)]">Updates map in real-time</span>
+              </div>
+
+              {/* Water Level Slider */}
+              <div>
+                <div className="flex justify-between text-[11px] text-[var(--muted)] mb-[2px]">
+                  <span>Adjust River Stage</span>
+                  <span className="font-bold text-[var(--ink)]">{simulatedWaterLevel.toFixed(1)} m</span>
+                </div>
+                <input
+                  type="range"
+                  min="1.0"
+                  max={selectedStation ? (selectedStation.dangerLevel + 2.5).toFixed(1) : "10.0"}
+                  step="0.1"
+                  value={simulatedWaterLevel}
+                  onChange={(e) => setSimulatedWaterLevel(parseFloat(e.target.value))}
+                  className="w-full accent-[var(--sea)] cursor-pointer"
+                />
+              </div>
+
+              {/* Rainfall Slider */}
+              <div>
+                <div className="flex justify-between text-[11px] text-[var(--muted)] mb-[2px]">
+                  <span>Adjust Precipitation</span>
+                  <span className="font-bold text-[var(--ink)]">{simulatedRainfall} mm/h</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="180"
+                  step="2"
+                  value={simulatedRainfall}
+                  onChange={(e) => setSimulatedRainfall(parseInt(e.target.value))}
+                  className="w-full accent-[var(--sea)] cursor-pointer"
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex gap-[6px] pt-[4px]">
+                <button
+                  onClick={() => {
+                    if (selectedStation) {
+                      setSimulatedWaterLevel(selectedStation.normalLevel);
+                      setSimulatedRainfall(15);
+                    }
+                  }}
+                  className="flex-1 py-[6px] px-[8px] bg-[var(--bg)] border border-[var(--line)] rounded-[4px] text-[11px] font-medium text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--sea)_10%,transparent)] cursor-pointer"
+                >
+                  Normal Flow
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedStation) {
+                      setSimulatedWaterLevel(selectedStation.warningLevel);
+                      setSimulatedRainfall(85);
+                    }
+                  }}
+                  className="flex-1 py-[6px] px-[8px] bg-[var(--bg)] border border-[var(--mod)] rounded-[4px] text-[11px] font-medium text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--mod)_10%,transparent)] cursor-pointer"
+                >
+                  Bankfull Warning
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedStation) {
+                      setSimulatedWaterLevel(selectedStation.dangerLevel + 0.6);
+                      setSimulatedRainfall(145);
+                    }
+                  }}
+                  className="flex-1 py-[6px] px-[8px] bg-[var(--crit)] text-white rounded-[4px] text-[11px] font-bold hover:opacity-90 cursor-pointer shadow-xs"
+                >
+                  Trigger Breach
+                </button>
+              </div>
+            </div>
+
+            {/* Direct SOP Navigation Button */}
+            <div className="border-t border-[var(--line)] pt-[10px]">
+              <button
+                onClick={() => setActiveTab('emergency-actions')}
+                className="w-full py-[8px] px-[12px] bg-[var(--sea)] text-white rounded-[6px] text-[13px] font-bold flex items-center justify-center gap-[6px] hover:opacity-95 cursor-pointer shadow-xs"
+              >
+                <span>View Emergency SOP Protocols &rarr;</span>
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </div>
