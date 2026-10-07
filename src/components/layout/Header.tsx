@@ -65,7 +65,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="w-full bg-[var(--panel)] border-b border-[var(--line)]">
+      <header className="w-full bg-[var(--panel)] border-b border-[var(--line)] sticky top-0 z-30">
         {/* Mobile Header Top Brand Bar (< md) */}
         <div className="md:hidden px-3 py-2 border-b border-[var(--line)] flex items-center justify-between">
           <div className="flex items-center gap-2">

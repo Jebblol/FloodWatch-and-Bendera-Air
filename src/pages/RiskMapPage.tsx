@@ -399,7 +399,7 @@ export const RiskMapPage: React.FC = () => {
       </div>
 
       {/* Main Map + Side Telemetry Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[20px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[20px] items-start">
         {/* Left Column: Interactive Leaflet Heatmap Canvas */}
         <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-col justify-between">
           {/* Map Top Bar Toolbar */}
@@ -640,7 +640,7 @@ export const RiskMapPage: React.FC = () => {
         </div>
 
         {/* Right Column: Station Telemetry, Live Hydrograph & Simulation Controls */}
-        <div className="space-y-[20px]">
+        <div className="space-y-[20px] lg:sticky lg:top-[20px]">
           {/* Active Station Telemetry Card */}
           <section className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] space-y-[14px]">
             <div className="flex items-start justify-between gap-[10px]">

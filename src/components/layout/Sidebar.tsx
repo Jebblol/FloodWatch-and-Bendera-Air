@@ -90,7 +90,7 @@ export const Sidebar: React.FC = () => {
   return (
     <nav 
       aria-label="Navigation"
-      className="hidden md:flex flex-col w-[200px] flex-none bg-[var(--panel)] border-r border-[var(--line)] p-[20px_10px] min-h-screen select-none"
+      className="hidden md:flex flex-col w-[200px] flex-none bg-[var(--panel)] border-r border-[var(--line)] p-[20px_10px] h-screen sticky top-0 overflow-y-auto select-none z-30"
     >
       {/* Brand */}
       <div className="flex items-center gap-[10px] px-[12px] pt-[4px] pb-[20px] text-[19px] font-bold tracking-[-0.02em] text-[var(--ink)]">
