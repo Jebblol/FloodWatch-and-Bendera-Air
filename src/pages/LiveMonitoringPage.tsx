@@ -295,7 +295,7 @@ export const LiveMonitoringPage: React.FC = () => {
             </div>
 
             {/* Big Live Value & Delta Display */}
-            <div className="grid grid-cols-3 gap-[10px] my-[14px]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-[10px] my-[14px]">
               <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[12px]">
                 <span className="text-[11px] text-[var(--muted)] block">Current Water Stage</span>
                 <div className="flex items-baseline gap-[6px] mt-[2px]">
@@ -451,7 +451,7 @@ export const LiveMonitoringPage: React.FC = () => {
             </div>
 
             {/* Big Live Value & Delta Display */}
-            <div className="grid grid-cols-3 gap-[10px] my-[14px]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-[10px] my-[14px]">
               <div className="bg-[var(--bg)] border border-[var(--line)] rounded-[6px] p-[12px]">
                 <span className="text-[11px] text-[var(--muted)] block">Rainfall Rate</span>
                 <div className="flex items-baseline gap-[6px] mt-[2px]">

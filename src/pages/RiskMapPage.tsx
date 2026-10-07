@@ -456,7 +456,7 @@ export const RiskMapPage: React.FC = () => {
           </div>
 
           {/* Leaflet Map Canvas */}
-          <div className="w-full h-[480px] rounded-[6px] border border-[var(--line)] overflow-hidden relative shadow-inner">
+          <div className="w-full h-[340px] sm:h-[420px] md:h-[480px] rounded-[6px] border border-[var(--line)] overflow-hidden relative shadow-inner">
             <MapContainer
               center={[4.5, 115.0]}
               zoom={4}
@@ -560,33 +560,33 @@ export const RiskMapPage: React.FC = () => {
             </MapContainer>
 
             {/* Floating Live Legend On Top of Map */}
-            <div className="absolute bottom-3 left-3 z-[400] bg-[var(--panel)]/95 backdrop-blur-xs border border-[var(--line)] rounded-[6px] p-[10px_14px] text-[12px] shadow-sm">
-              <div className="font-bold text-[var(--ink)] mb-[4px] flex items-center justify-between gap-3">
-                <span>
+            <div className="absolute bottom-2 left-2 right-2 sm:right-auto sm:bottom-3 sm:left-3 z-[400] bg-[var(--panel)]/95 backdrop-blur-xs border border-[var(--line)] rounded-[6px] p-[8px_10px] sm:p-[10px_14px] text-[11px] sm:text-[12px] shadow-sm">
+              <div className="font-bold text-[var(--ink)] mb-[4px] flex items-center justify-between gap-2">
+                <span className="truncate">
                   {activeHeatmapLayer === 'composite' && 'Composite Risk Intensity'}
                   {activeHeatmapLayer === 'rainfall' && 'Rainfall Radar (mm/h)'}
                   {activeHeatmapLayer === 'river' && 'River Stage vs Bankfull'}
                   {activeHeatmapLayer === 'history' && 'Historical Disaster Exposure'}
                 </span>
-                <span className="text-[10px] text-[var(--muted)] font-normal">Active Layer</span>
+                <span className="text-[9px] sm:text-[10px] text-[var(--muted)] font-normal shrink-0">Active Layer</span>
               </div>
 
-              <div className="flex items-center gap-[12px] flex-wrap">
+              <div className="flex items-center gap-[8px] sm:gap-[12px] flex-wrap text-[10px] sm:text-[12px]">
                 <span className="flex items-center gap-[4px]">
-                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--low)' }} />
+                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--low)' }} />
                   Low
                 </span>
                 <span className="flex items-center gap-[4px]">
-                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--mod)' }} />
-                  Alert (Moderate)
+                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--mod)' }} />
+                  Alert
                 </span>
                 <span className="flex items-center gap-[4px]">
-                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--high)' }} />
-                  Warning (High)
+                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--high)' }} />
+                  Warning
                 </span>
                 <span className="flex items-center gap-[4px]">
-                  <i className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: 'var(--crit)' }} />
-                  Danger (Critical)
+                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--crit)' }} />
+                  Danger
                 </span>
               </div>
             </div>

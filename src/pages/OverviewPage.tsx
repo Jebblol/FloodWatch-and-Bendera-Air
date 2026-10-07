@@ -68,19 +68,19 @@ export const OverviewPage: React.FC = () => {
     <div className="space-y-[20px] w-full">
       {/* Hero Card */}
       <section 
-        className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-[24px] items-center bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[18px_24px]"
+        className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-[16px] sm:gap-[24px] items-center bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[14px_16px] sm:p-[18px_24px]"
         style={{ borderLeft: `8px solid ${threatColorVar}` }}
         aria-label="Current threat"
       >
-        <div className="text-[30px] font-bold" style={{ color: threatColorVar }}>
-          <span className="block text-[13px] font-normal text-[var(--muted)]">
+        <div className="text-[26px] sm:text-[30px] font-bold" style={{ color: threatColorVar }}>
+          <span className="block text-[12px] sm:text-[13px] font-normal text-[var(--muted)]">
             {selectedCountry.name}
           </span>
           {threatAssessment.level}
-          <span className="block text-[13px] font-normal text-[var(--muted)]">
+          <span className="block text-[12px] sm:text-[13px] font-normal text-[var(--muted)]">
             Composite risk {threatAssessment.score}/100
           </span>
-          <div className="h-[8px] bg-[var(--line)] rounded-[4px] mt-[6px] w-[140px] overflow-hidden">
+          <div className="h-[8px] bg-[var(--line)] rounded-[4px] mt-[6px] w-[130px] sm:w-[140px] overflow-hidden">
             <i 
               className="block h-full rounded-[4px] transition-all duration-300" 
               style={{ width: `${Math.min(100, Math.max(5, threatAssessment.score))}%`, background: threatColorVar }}
@@ -88,35 +88,35 @@ export const OverviewPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-[32px] flex-wrap items-center">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-[14px] sm:gap-[32px] items-center">
           <div>
-            <b className="block text-[24px] font-bold text-[var(--ink)]">
+            <b className="block text-[20px] sm:text-[24px] font-bold text-[var(--ink)]">
               {simulatedRainfall} mm/h
             </b>
-            <span className="text-[13px] text-[var(--muted)]">Rainfall</span>
+            <span className="text-[12px] sm:text-[13px] text-[var(--muted)]">Rainfall</span>
           </div>
 
           <div>
-            <b className="block text-[24px] font-bold text-[var(--ink)]">
+            <b className="block text-[20px] sm:text-[24px] font-bold text-[var(--ink)]">
               {simulatedWaterLevel.toFixed(1)} m
             </b>
-            <span className="text-[13px] text-[var(--muted)]">
+            <span className="text-[12px] sm:text-[13px] text-[var(--muted)]">
               River stage · {selectedStation ? selectedStation.name.split(' - ')[0] : (selectedCountry.basin ? selectedCountry.basin.split(' ')[0] : 'basin')}
             </span>
           </div>
 
           <div>
-            <b className="block text-[24px] font-bold text-[var(--ink)]">
+            <b className="block text-[20px] sm:text-[24px] font-bold text-[var(--ink)]">
               {selectedCountry.vulnerabilityLevel || 'High'}
             </b>
-            <span className="text-[13px] text-[var(--muted)]">Regional vulnerability</span>
+            <span className="text-[12px] sm:text-[13px] text-[var(--muted)]">Regional vulnerability</span>
           </div>
 
           <div>
-            <b className="block text-[24px] font-bold text-[var(--ink)]">
+            <b className="block text-[20px] sm:text-[24px] font-bold text-[var(--ink)]">
               14:21
             </b>
-            <span className="text-[13px] text-[var(--muted)]">Last updated (simulated)</span>
+            <span className="text-[12px] sm:text-[13px] text-[var(--muted)]">Last updated (simulated)</span>
           </div>
         </div>
       </section>
@@ -130,7 +130,7 @@ export const OverviewPage: React.FC = () => {
             Select a country. Hatched = no dataset available.
           </p>
 
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-[8px]">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-[8px]">
             {COUNTRIES_LIST.map((c) => {
               const isSelected = c.name === selectedCountry.name;
               const isNa = c.level === 'na';

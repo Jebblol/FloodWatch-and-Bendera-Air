@@ -257,10 +257,10 @@ export const AlertsPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-[8px] shrink-0">
+              <div className="flex items-center gap-[8px] shrink-0 w-full sm:w-auto">
                 <button
                   onClick={() => toggleAcknowledge(alt.id)}
-                  className={`px-[12px] py-[8px] rounded-[6px] text-[12px] font-semibold border transition-colors cursor-pointer ${
+                  className={`flex-1 sm:flex-initial px-[12px] py-[8px] rounded-[6px] text-[12px] font-semibold border transition-colors cursor-pointer text-center ${
                     isAck 
                       ? 'bg-[var(--bg)] border-[var(--line)] text-emerald-700 font-bold'
                       : 'bg-[var(--bg)] border-[var(--line)] text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--sea)_10%,transparent)]'
@@ -271,7 +271,7 @@ export const AlertsPage: React.FC = () => {
 
                 <button
                   onClick={() => setActiveTab('emergency-actions')}
-                  className="px-[12px] py-[8px] rounded-[6px] text-[12px] font-bold text-white cursor-pointer shadow-xs hover:opacity-95"
+                  className="flex-1 sm:flex-initial px-[12px] py-[8px] rounded-[6px] text-[12px] font-bold text-white cursor-pointer shadow-xs hover:opacity-95 text-center"
                   style={{ background: altColor }}
                 >
                   View Actions
