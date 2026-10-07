@@ -91,68 +91,72 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Controls Container */}
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-[24px] py-2 sm:py-[12px] flex items-center gap-2 sm:gap-[10px] flex-wrap justify-between md:justify-start">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-[24px] py-2.5 sm:py-[12px] flex flex-col md:flex-row md:items-center gap-2.5 sm:gap-[10px] justify-between">
           {/* Desktop Title */}
           <h1 className="hidden md:block text-[18px] font-semibold text-[var(--ink)] m-0 mr-auto">
             {TAB_TITLES[activeTab] || 'Overview'}
           </h1>
 
           {/* Selectors and Action Controls */}
-          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
-            <label className="text-[11px] sm:text-[12px] text-[var(--muted)] flex items-center gap-1.5">
-              <span className="hidden sm:inline">Country</span>
-              <select
-                value={selectedCountry.name}
-                onChange={(e) => {
-                  const found = ASEAN_COUNTRIES.find(c => c.name === e.target.value);
-                  if (found) setSelectedCountryId(found.id);
-                }}
-                aria-label="Country"
-                className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-2 sm:px-[10px] py-1.5 text-[12px] sm:text-[13px] outline-none cursor-pointer max-w-[110px] sm:max-w-none truncate"
-              >
-                {ASEAN_COUNTRIES.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+            {/* Top row on mobile: Country and Scenario dropdowns sharing width equally */}
+            <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
+              <label className="text-[12px] text-[var(--muted)] flex items-center gap-1.5 min-w-0">
+                <span className="shrink-0 font-medium text-[11px] sm:text-[12px]">Country</span>
+                <select
+                  value={selectedCountry.name}
+                  onChange={(e) => {
+                    const found = ASEAN_COUNTRIES.find(c => c.name === e.target.value);
+                    if (found) setSelectedCountryId(found.id);
+                  }}
+                  aria-label="Country"
+                  className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-2 py-1.5 text-[12px] outline-none cursor-pointer w-full sm:w-[130px] truncate"
+                >
+                  {ASEAN_COUNTRIES.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="text-[11px] sm:text-[12px] text-[var(--muted)] flex items-center gap-1.5">
-              <span className="hidden sm:inline">Scenario</span>
-              <select
-                value={selectedScenarioTitle}
-                onChange={handleScenarioChange}
-                aria-label="Scenario"
-                className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-2 sm:px-[10px] py-1.5 text-[12px] sm:text-[13px] outline-none cursor-pointer max-w-[115px] sm:max-w-none truncate"
-              >
-                <option value="Live feed">Live feed</option>
-                <option value="IDN — Critical: Monsoon flash surge">IDN — Critical Surge</option>
-                <option value="THA — High: Monsoon inflow">THA — High Inflow</option>
-                <option value="PHL — Moderate: Typhoon outer rainbands">PHL — Moderate Typhoon</option>
-              </select>
-            </label>
+              <label className="text-[12px] text-[var(--muted)] flex items-center gap-1.5 min-w-0">
+                <span className="shrink-0 font-medium text-[11px] sm:text-[12px]">Scenario</span>
+                <select
+                  value={selectedScenarioTitle}
+                  onChange={handleScenarioChange}
+                  aria-label="Scenario"
+                  className="bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-2 py-1.5 text-[12px] outline-none cursor-pointer w-full sm:w-[150px] truncate"
+                >
+                  <option value="Live feed">Live feed</option>
+                  <option value="IDN — Critical: Monsoon flash surge">IDN — Critical</option>
+                  <option value="THA — High: Monsoon inflow">THA — High Inflow</option>
+                  <option value="PHL — Moderate: Typhoon outer rainbands">PHL — Moderate</option>
+                </select>
+              </label>
+            </div>
 
-            <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+            {/* Action buttons row */}
+            <div className="flex items-center gap-2 justify-end sm:justify-start pt-1 sm:pt-0 border-t sm:border-t-0 border-[var(--line)]/50">
               <button
                 onClick={startPresentationTour}
-                className="bg-[var(--sea)] text-white border border-[var(--sea)] rounded-[6px] px-2.5 sm:px-[12px] py-1.5 text-[11px] sm:text-[13px] font-medium cursor-pointer transition-opacity hover:opacity-95"
+                className="flex-1 sm:flex-initial text-center bg-[var(--sea)] text-white border border-[var(--sea)] rounded-[6px] px-3 py-1.5 text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-95"
               >
-                Tour
+                Take the tour
               </button>
 
               <button
                 onClick={() => setShowSimInfo(true)}
                 title="Flood forecasts, risk scores and sensor readings are simulated for demonstration, not real-time predictions."
-                className="bg-[var(--bg)] border border-[var(--mod)] text-[var(--ink)] rounded-[6px] px-2 sm:px-[10px] py-1.5 text-[11px] sm:text-[13px] cursor-pointer"
+                className="flex-1 sm:flex-initial text-center bg-[var(--bg)] border border-[var(--mod)] text-[var(--ink)] rounded-[6px] px-3 py-1.5 text-[12px] font-medium cursor-pointer"
               >
-                Simulated
+                Simulated data
               </button>
 
               <button
                 onClick={() => setIsDark(!isDark)}
                 aria-label="Toggle dark mode"
-                className="hidden md:inline-block bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-[10px] py-1.5 text-[13px] cursor-pointer min-w-[50px] text-center"
+                className="hidden md:inline-block bg-[var(--bg)] border border-[var(--line)] text-[var(--ink)] rounded-[6px] px-3 py-1.5 text-[12px] font-medium cursor-pointer min-w-[50px] text-center"
               >
                 {isDark ? 'Light' : 'Dark'}
               </button>

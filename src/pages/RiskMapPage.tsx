@@ -456,7 +456,7 @@ export const RiskMapPage: React.FC = () => {
           </div>
 
           {/* Leaflet Map Canvas */}
-          <div className="w-full h-[340px] sm:h-[420px] md:h-[480px] rounded-[6px] border border-[var(--line)] overflow-hidden relative shadow-inner">
+          <div className="w-full h-[340px] sm:h-[420px] md:h-[480px] rounded-[6px] border border-[var(--line)] overflow-hidden relative z-0 shadow-inner">
             <MapContainer
               center={[4.5, 115.0]}
               zoom={4}
@@ -560,32 +560,32 @@ export const RiskMapPage: React.FC = () => {
             </MapContainer>
 
             {/* Floating Live Legend On Top of Map */}
-            <div className="absolute bottom-2 left-2 right-2 sm:right-auto sm:bottom-3 sm:left-3 z-[400] bg-[var(--panel)]/95 backdrop-blur-xs border border-[var(--line)] rounded-[6px] p-[8px_10px] sm:p-[10px_14px] text-[11px] sm:text-[12px] shadow-sm">
-              <div className="font-bold text-[var(--ink)] mb-[4px] flex items-center justify-between gap-2">
+            <div className="absolute top-3 left-12 sm:top-auto sm:left-3 sm:bottom-3 z-[400] max-w-[calc(100%-110px)] sm:max-w-none bg-[var(--panel)]/95 backdrop-blur-xs border border-[var(--line)] rounded-[6px] p-[6px_10px] sm:p-[10px_14px] text-[11px] sm:text-[12px] shadow-sm">
+              <div className="font-bold text-[var(--ink)] mb-[3px] flex items-center justify-between gap-2">
                 <span className="truncate">
                   {activeHeatmapLayer === 'composite' && 'Composite Risk Intensity'}
                   {activeHeatmapLayer === 'rainfall' && 'Rainfall Radar (mm/h)'}
                   {activeHeatmapLayer === 'river' && 'River Stage vs Bankfull'}
                   {activeHeatmapLayer === 'history' && 'Historical Disaster Exposure'}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-[var(--muted)] font-normal shrink-0">Active Layer</span>
+                <span className="text-[9px] sm:text-[10px] text-[var(--muted)] font-normal shrink-0 hidden sm:inline">Active Layer</span>
               </div>
 
-              <div className="flex items-center gap-[8px] sm:gap-[12px] flex-wrap text-[10px] sm:text-[12px]">
-                <span className="flex items-center gap-[4px]">
-                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--low)' }} />
+              <div className="flex items-center gap-[6px] sm:gap-[12px] flex-wrap text-[10px] sm:text-[12px]">
+                <span className="flex items-center gap-[3px]">
+                  <i className="w-[7px] h-[7px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--low)' }} />
                   Low
                 </span>
-                <span className="flex items-center gap-[4px]">
-                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--mod)' }} />
+                <span className="flex items-center gap-[3px]">
+                  <i className="w-[7px] h-[7px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--mod)' }} />
                   Alert
                 </span>
-                <span className="flex items-center gap-[4px]">
-                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--high)' }} />
+                <span className="flex items-center gap-[3px]">
+                  <i className="w-[7px] h-[7px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--high)' }} />
                   Warning
                 </span>
-                <span className="flex items-center gap-[4px]">
-                  <i className="w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--crit)' }} />
+                <span className="flex items-center gap-[3px]">
+                  <i className="w-[7px] h-[7px] sm:w-[10px] sm:h-[10px] rounded-full inline-block" style={{ background: 'var(--crit)' }} />
                   Danger
                 </span>
               </div>
