@@ -280,7 +280,7 @@ export const HistoricalDataPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-[20px] w-full max-w-[1200px]">
+    <div className="space-y-[20px] w-full">
       {/* Top Banner Header */}
       <div className="bg-[var(--panel)] border border-[var(--line)] rounded-[8px] p-[16px] flex flex-wrap items-center justify-between gap-[16px]">
         <div>

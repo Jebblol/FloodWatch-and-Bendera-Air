@@ -94,12 +94,11 @@ export const Sidebar: React.FC = () => {
     >
       {/* Brand */}
       <div className="flex items-center gap-[10px] px-[12px] pt-[4px] pb-[20px] text-[19px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-        <div className="w-[34px] h-[34px] flex-none rounded-[10px] bg-[#1d63ff] flex items-center justify-center text-white shadow-sm">
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 15c3-2 6-2 9 0s6 2 9 0" />
-            <path d="M3 9c3-2 6-2 9 0s6 2 9 0" />
-          </svg>
-        </div>
+        <img 
+          src="/ews-logo.png" 
+          alt="FloodWatch Logo" 
+          className="w-[34px] h-[34px] flex-none rounded-[10px] object-cover shadow-sm"
+        />
         <span>FloodWatch</span>
       </div>
 

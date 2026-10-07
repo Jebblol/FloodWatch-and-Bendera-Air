@@ -69,12 +69,11 @@ export const Header: React.FC = () => {
         {/* Mobile Header Top Brand Bar (< md) */}
         <div className="md:hidden px-3 py-2 border-b border-[var(--line)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-[28px] h-[28px] rounded-[8px] bg-[#1d63ff] flex items-center justify-center text-white shadow-xs">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 15c3-2 6-2 9 0s6 2 9 0" />
-                <path d="M3 9c3-2 6-2 9 0s6 2 9 0" />
-              </svg>
-            </div>
+            <img 
+              src="/ews-logo.png" 
+              alt="FloodWatch Logo" 
+              className="w-[28px] h-[28px] rounded-[8px] object-cover shadow-xs"
+            />
             <span className="font-bold text-[16px] text-[var(--ink)] tracking-tight">FloodWatch</span>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--line)] text-[var(--sea)]">
               {TAB_TITLES[activeTab] || 'Overview'}
@@ -90,8 +89,8 @@ export const Header: React.FC = () => {
           </button>
         </div>
 
-        {/* Controls Container */}
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-[24px] py-2.5 sm:py-[12px] flex flex-col md:flex-row md:items-center gap-2.5 sm:gap-[10px] justify-between">
+        {/* Controls Container - Full width aligned with sidebar and content */}
+        <div className="w-full px-3 sm:px-6 py-2.5 sm:py-[12px] flex flex-col md:flex-row md:items-center gap-2.5 sm:gap-[10px] justify-between">
           {/* Desktop Title */}
           <h1 className="hidden md:block text-[18px] font-semibold text-[var(--ink)] m-0 mr-auto">
             {TAB_TITLES[activeTab] || 'Overview'}

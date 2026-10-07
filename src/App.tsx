@@ -50,9 +50,9 @@ const DashboardContent: React.FC = () => {
         {/* Top Header */}
         <Header />
 
-        {/* Main Content Area - Centered properly with mobile-friendly margins */}
-        <main className="flex-1 w-full py-[16px] sm:py-[20px] pb-[90px] md:pb-[24px] flex flex-col items-center">
-          <div className="w-full max-w-[1200px] px-[12px] sm:px-[24px]">
+        {/* Main Content Area - Aligned directly with header and sidebar */}
+        <main className="flex-1 w-full py-[16px] sm:py-[20px] pb-[90px] md:pb-[24px]">
+          <div className="w-full px-3 sm:px-6">
             {renderActivePage()}
           </div>
         </main>
